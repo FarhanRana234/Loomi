@@ -38,14 +38,8 @@ export default function ProjectDetailPage() {
       setLikeCount(liked ? likeCount - 1 : likeCount + 1);
 
       try {
-        const token = document.cookie
-          .split("; ")
-          .find((c) => c.startsWith("__session="))
-          ?.split("=")[1];
-
         const res = await fetch(`/api/projects/${params.id}/like`, {
           method: "POST",
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
         });
         if (!res.ok) {
           setLiked(prevLiked);

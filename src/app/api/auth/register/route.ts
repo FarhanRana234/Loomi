@@ -3,6 +3,24 @@ import { getAdminAuth } from "@/lib/firebase-admin";
 import { connectToDatabase } from "@/lib/db";
 import User from "@/models/User";
 
+const FIREBASE_API_KEY = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
+
+async function firebaseSignUp(email: string, password: string) {
+  const res = await fetch(
+    `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${FIREBASE_API_KEY}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password, returnSecureToken: true }),
+    }
+  );
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error?.message || "Registration failed");
+  }
+  return res.json();
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { email, password, username } = await request.json();
@@ -14,55 +32,53 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Accept an idToken from client-side Firebase Auth
-    const { idToken } = await request.json().catch(() => ({}));
-
-    if (idToken) {
-      const decoded = await getAdminAuth().verifyIdToken(idToken);
-
-      await connectToDatabase();
-
-      const existing = await User.findOne({
-        $or: [{ firebaseId: decoded.uid }, { username }],
-      });
-
-      if (existing) {
-        return NextResponse.json(
-          { success: false, error: "User already exists" },
-          { status: 409 }
-        );
-      }
-
-      const user = await User.create({
-        firebaseId: decoded.uid,
-        email: decoded.email || email,
-        username,
-        avatarUrl: decoded.picture || "",
-      });
-
-      const response = NextResponse.json(
-        { success: true, data: { user } },
-        { status: 201 }
+    if (!FIREBASE_API_KEY) {
+      return NextResponse.json(
+        { success: false, error: "Firebase not configured" },
+        { status: 500 }
       );
-      response.cookies.set("__session", idToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        path: "/",
-        maxAge: 60 * 60,
-      });
-
-      return response;
     }
 
-    return NextResponse.json(
-      { success: false, error: "Authentication not configured. Please set up Firebase." },
-      { status: 501 }
+    await connectToDatabase();
+
+    const existing = await User.findOne({ username });
+    if (existing) {
+      return NextResponse.json(
+        { success: false, error: "Username already taken" },
+        { status: 409 }
+      );
+    }
+
+    const firebaseRes = await firebaseSignUp(email, password);
+    const { idToken, localId } = firebaseRes;
+
+    const decoded = await getAdminAuth().verifyIdToken(idToken);
+
+    const user = await User.create({
+      firebaseId: decoded.uid,
+      email: decoded.email || email,
+      username,
+      avatarUrl: decoded.picture || "",
+    });
+
+    const response = NextResponse.json(
+      { success: true, data: { user } },
+      { status: 201 }
     );
-  } catch (error) {
+    response.cookies.set("__session", idToken, {
+      httpOnly: false,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60,
+    });
+
+    return response;
+  } catch (error: unknown) {
     console.error("Register error:", error);
+    const message = error instanceof Error ? error.message : "Registration failed";
     return NextResponse.json(
-      { success: false, error: "Registration failed" },
+      { success: false, error: message },
       { status: 500 }
     );
   }

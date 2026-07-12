@@ -3,6 +3,24 @@ import { getAdminAuth } from "@/lib/firebase-admin";
 import { connectToDatabase } from "@/lib/db";
 import User from "@/models/User";
 
+const FIREBASE_API_KEY = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
+
+async function firebaseSignIn(email: string, password: string) {
+  const res = await fetch(
+    `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${FIREBASE_API_KEY}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password, returnSecureToken: true }),
+    }
+  );
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error?.message || "Invalid email or password");
+  }
+  return res.json();
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { email, password } = await request.json();
@@ -14,46 +32,44 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Firebase Admin doesn't support email/password sign-in directly.
-    // The client should use Firebase Auth SDK for credential creation,
-    // then POST the idToken here. For now, accept an idToken from the client.
-    const { idToken } = await request.json().catch(() => ({}));
-
-    if (idToken) {
-      const decoded = await getAdminAuth().verifyIdToken(idToken);
-
-      await connectToDatabase();
-      const user = await User.findOne({ firebaseId: decoded.uid });
-
-      if (!user) {
-        return NextResponse.json(
-          { success: false, error: "User not found. Please register first." },
-          { status: 404 }
-        );
-      }
-
-      // Create a session cookie
-      const response = NextResponse.json({ success: true, data: { user } });
-      response.cookies.set("__session", idToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        path: "/",
-        maxAge: 60 * 60, // 1 hour
-      });
-
-      return response;
+    if (!FIREBASE_API_KEY) {
+      return NextResponse.json(
+        { success: false, error: "Firebase not configured" },
+        { status: 500 }
+      );
     }
 
-    return NextResponse.json(
-      { success: false, error: "Authentication not configured. Please set up Firebase." },
-      { status: 501 }
-    );
-  } catch (error) {
+    const firebaseRes = await firebaseSignIn(email, password);
+    const { idToken, localId } = firebaseRes;
+
+    const decoded = await getAdminAuth().verifyIdToken(idToken);
+
+    await connectToDatabase();
+    const user = await User.findOne({ firebaseId: decoded.uid }).select("-__v");
+
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: "User not found. Please register first." },
+        { status: 404 }
+      );
+    }
+
+    const response = NextResponse.json({ success: true, data: { user } });
+    response.cookies.set("__session", idToken, {
+      httpOnly: false,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60,
+    });
+
+    return response;
+  } catch (error: unknown) {
     console.error("Login error:", error);
+    const message = error instanceof Error ? error.message : "Login failed";
     return NextResponse.json(
-      { success: false, error: "Login failed" },
-      { status: 500 }
+      { success: false, error: message },
+      { status: 401 }
     );
   }
 }

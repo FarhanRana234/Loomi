@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
 import Project from "@/models/Project";
-import { getAdminAuth } from "@/lib/firebase-admin";
+import { verifyRequest } from "@/lib/auth";
 import User from "@/models/User";
 
 export async function GET(request: NextRequest) {
@@ -41,16 +41,13 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const authHeader = request.headers.get("authorization");
-    if (!authHeader?.startsWith("Bearer ")) {
+    const decoded = await verifyRequest(request);
+    if (!decoded) {
       return NextResponse.json(
         { success: false, error: "Not authenticated" },
         { status: 401 }
       );
     }
-
-    const token = authHeader.split("Bearer ")[1];
-    const decoded = await getAdminAuth().verifyIdToken(token);
 
     await connectToDatabase();
 

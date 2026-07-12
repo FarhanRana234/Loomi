@@ -1,26 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
 import Project from "@/models/Project";
-import { getAdminAuth } from "@/lib/firebase-admin";
+import { verifyRequest } from "@/lib/auth";
 
 export async function POST(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params;
 
-    const authHeader = _request.headers.get("authorization");
-    let firebaseId: string | null = null;
-
-    if (authHeader?.startsWith("Bearer ")) {
-      try {
-        const token = authHeader.split("Bearer ")[1];
-        const decoded = await getAdminAuth().verifyIdToken(token);
-        firebaseId = decoded.uid;
-      } catch {
-        // allow anonymous likes
-      }
+    const decoded = await verifyRequest(request);
+    if (!decoded) {
+      return NextResponse.json(
+        { success: false, error: "Authentication required to like" },
+        { status: 401 }
+      );
     }
 
     await connectToDatabase();
@@ -33,13 +28,7 @@ export async function POST(
       );
     }
 
-    if (!firebaseId) {
-      return NextResponse.json(
-        { success: false, error: "Authentication required to like" },
-        { status: 401 }
-      );
-    }
-
+    const firebaseId = decoded.uid;
     const alreadyLiked = project.likes.includes(firebaseId);
 
     if (alreadyLiked) {

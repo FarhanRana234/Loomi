@@ -1,27 +1,25 @@
 import { NextResponse } from "next/server";
-import { headers } from "next/headers";
+import { cookies } from "next/headers";
 import { connectToDatabase } from "@/lib/db";
 import User from "@/models/User";
 import { getAdminAuth } from "@/lib/firebase-admin";
 
 export async function GET() {
   try {
-    const hdrs = await headers();
-    const authHeader = hdrs.get("authorization");
-    if (!authHeader?.startsWith("Bearer ")) {
+    const cookieStore = await cookies();
+    const token = cookieStore.get("__session")?.value;
+
+    if (!token) {
       return NextResponse.json(
         { success: false, error: "Not authenticated" },
         { status: 401 }
       );
     }
 
-    const token = authHeader.split("Bearer ")[1];
     const decoded = await getAdminAuth().verifyIdToken(token);
 
     await connectToDatabase();
-    const user = await User.findOne({ firebaseId: decoded.uid }).select(
-      "-__v"
-    );
+    const user = await User.findOne({ firebaseId: decoded.uid }).select("-__v");
 
     if (!user) {
       return NextResponse.json(

@@ -1,27 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
 import User from "@/models/User";
-import { getAdminAuth } from "@/lib/firebase-admin";
-
-async function verifyAdmin(request: NextRequest) {
-  const authHeader = request.headers.get("authorization");
-  if (!authHeader?.startsWith("Bearer ")) {
-    return null;
-  }
-  const token = authHeader.split("Bearer ")[1];
-  const decoded = await getAdminAuth().verifyIdToken(token);
-  await connectToDatabase();
-  const user = await User.findOne({ firebaseId: decoded.uid });
-  if (!user || user.role !== "admin") return null;
-  return user;
-}
+import { verifyRequest } from "@/lib/auth";
 
 export async function GET(request: NextRequest) {
   try {
-    const admin = await verifyAdmin(request);
-    if (!admin) {
+    const decoded = await verifyRequest(request);
+    if (!decoded) {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
+        { status: 403 }
+      );
+    }
+
+    await connectToDatabase();
+    const user = await User.findOne({ firebaseId: decoded.uid });
+    if (!user || user.role !== "admin") {
+      return NextResponse.json(
+        { success: false, error: "Forbidden" },
         { status: 403 }
       );
     }

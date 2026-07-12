@@ -51,16 +51,10 @@ export default function UploadPage() {
       const uploadData = await uploadRes.json();
       setProgress(70);
 
-      const token = document.cookie
-        .split("; ")
-        .find((c) => c.startsWith("__session="))
-        ?.split("=")[1];
-
       const projectRes = await fetch("/api/projects", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({
           title,
