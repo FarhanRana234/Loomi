@@ -5,7 +5,6 @@ import { ThemeProvider } from "next-themes";
 import { Navbar } from "@/components/features/Navbar";
 import { Providers } from "@/components/features/Providers";
 import { RouteProgress } from "@/components/features/RouteProgress";
-import { BlockingLoader } from "@/components/features/BlockingLoader";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -54,7 +53,6 @@ export default function RootLayout({
             <Suspense>
               <RouteProgress />
             </Suspense>
-            <BlockingLoader />
             <Suspense>
               <Navbar />
             </Suspense>

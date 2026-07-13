@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useTransition } from "react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,7 +14,7 @@ export default function DashboardPage() {
   const storeUser = useUserStore((s) => s.user);
   const [projects, setProjects] = useState<IProject[]>([]);
   const [stats, setStats] = useState({ views: 0, likes: 0, count: 0 });
-  const [deleting, setDeleting] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
 
   const fetchProjects = useCallback(async () => {
     if (!storeUser) return;
@@ -37,22 +37,22 @@ export default function DashboardPage() {
     fetchProjects();
   }, [fetchProjects]);
 
-  const handleDelete = async (projectId: string) => {
+  const handleDelete = (projectId: string) => {
     if (!confirm("Are you sure you want to delete this project? This cannot be undone.")) return;
 
-    setDeleting(projectId);
-    try {
-      const res = await fetch(`/api/projects/${projectId}`, { method: "DELETE" });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Failed to delete");
+    startTransition(async () => {
+      try {
+        const res = await fetch(`/api/projects/${projectId}`, { method: "DELETE" });
+        if (!res.ok) {
+          const data = await res.json();
+          throw new Error(data.error || "Failed to delete");
+        }
+        toast.success("Project deleted");
+        fetchProjects();
+      } catch (err: unknown) {
+        toast.error(err instanceof Error ? err.message : "Delete failed");
       }
-      toast.success("Project deleted");
-      fetchProjects();
-    } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Delete failed");
-    }
-    setDeleting(null);
+    });
   };
 
   const chartData = projects.slice(0, 7).map((p) => ({
@@ -174,10 +174,10 @@ export default function DashboardPage() {
                     variant="ghost"
                     size="icon"
                     className="h-8 w-8 shrink-0"
-                    disabled={deleting === project._id}
+                    disabled={isPending}
                     onClick={() => handleDelete(project._id)}
                   >
-                    <Trash2 className={`h-4 w-4 ${deleting === project._id ? "animate-pulse" : "text-destructive"}`} />
+                    <Trash2 className={`h-4 w-4 ${isPending ? "animate-pulse" : "text-destructive"}`} />
                   </Button>
                 </div>
               ))}

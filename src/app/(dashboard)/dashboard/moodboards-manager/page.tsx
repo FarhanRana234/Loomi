@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useTransition } from "react";
 import { toast } from "sonner";
 import {
   Plus,
@@ -32,10 +32,10 @@ interface Moodboard {
 
 export default function MoodboardsManagerPage() {
   const [moodboards, setMoodboards] = useState<Moodboard[]>([]);
-  const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
+  const [isPending, startTransition] = useTransition();
 
   const fetchMoodboards = useCallback(async () => {
     try {
@@ -53,109 +53,121 @@ export default function MoodboardsManagerPage() {
     fetchMoodboards();
   }, [fetchMoodboards]);
 
-  const handleCreate = async () => {
+  const handleCreate = () => {
     const trimmed = newName.trim();
     if (!trimmed) return;
-    setCreating(true);
-    try {
-      const res = await fetch("/api/moodboards", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: trimmed, visibility: "public" }),
-      });
-      if (res.ok) {
-        toast.success("Moodboard created");
-        setNewName("");
-        fetchMoodboards();
-      } else {
+
+    startTransition(async () => {
+      try {
+        const res = await fetch("/api/moodboards", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: trimmed, visibility: "public" }),
+        });
+        if (res.ok) {
+          toast.success("Moodboard created");
+          setNewName("");
+          fetchMoodboards();
+        } else {
+          toast.error("Failed to create");
+        }
+      } catch {
         toast.error("Failed to create");
       }
-    } catch {
-      toast.error("Failed to create");
-    }
-    setCreating(false);
+    });
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = (id: string) => {
     if (!confirm("Delete this moodboard? This cannot be undone.")) return;
-    try {
-      const res = await fetch(`/api/moodboards/${id}`, { method: "DELETE" });
-      if (res.ok) {
-        toast.success("Moodboard deleted");
-        fetchMoodboards();
-      } else {
+
+    startTransition(async () => {
+      try {
+        const res = await fetch(`/api/moodboards/${id}`, { method: "DELETE" });
+        if (res.ok) {
+          toast.success("Moodboard deleted");
+          fetchMoodboards();
+        } else {
+          toast.error("Failed to delete");
+        }
+      } catch {
         toast.error("Failed to delete");
       }
-    } catch {
-      toast.error("Failed to delete");
-    }
+    });
   };
 
-  const handleToggleVisibility = async (mb: Moodboard) => {
+  const handleToggleVisibility = (mb: Moodboard) => {
     const next = mb.visibility === "public" ? "private" : "public";
-    try {
-      const res = await fetch(`/api/moodboards/${mb._id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ visibility: next }),
-      });
-      if (res.ok) {
-        setMoodboards((prev) =>
-          prev.map((m) =>
-            m._id === mb._id ? { ...m, visibility: next } : m
-          )
-        );
-        toast.success(`Now ${next}`);
+
+    startTransition(async () => {
+      try {
+        const res = await fetch(`/api/moodboards/${mb._id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ visibility: next }),
+        });
+        if (res.ok) {
+          setMoodboards((prev) =>
+            prev.map((m) =>
+              m._id === mb._id ? { ...m, visibility: next } : m
+            )
+          );
+          toast.success(`Now ${next}`);
+        }
+      } catch {
+        toast.error("Failed to update");
       }
-    } catch {
-      toast.error("Failed to update");
-    }
+    });
   };
 
-  const handleRename = async (mb: Moodboard) => {
+  const handleRename = (mb: Moodboard) => {
     const trimmed = editName.trim();
     if (!trimmed || trimmed === mb.name) {
       setEditingId(null);
       return;
     }
-    try {
-      const res = await fetch(`/api/moodboards/${mb._id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: trimmed }),
-      });
-      if (res.ok) {
-        setMoodboards((prev) =>
-          prev.map((m) => (m._id === mb._id ? { ...m, name: trimmed } : m))
-        );
-        toast.success("Renamed");
+
+    startTransition(async () => {
+      try {
+        const res = await fetch(`/api/moodboards/${mb._id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: trimmed }),
+        });
+        if (res.ok) {
+          setMoodboards((prev) =>
+            prev.map((m) => (m._id === mb._id ? { ...m, name: trimmed } : m))
+          );
+          toast.success("Renamed");
+        }
+      } catch {
+        toast.error("Failed to rename");
       }
-    } catch {
-      toast.error("Failed to rename");
-    }
-    setEditingId(null);
+      setEditingId(null);
+    });
   };
 
-  const handleRemoveProject = async (mbId: string, projectId: string) => {
-    try {
-      const res = await fetch(`/api/moodboards/${mbId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "remove", projectId }),
-      });
-      if (res.ok) {
-        setMoodboards((prev) =>
-          prev.map((m) =>
-            m._id === mbId
-              ? { ...m, projects: m.projects.filter((p) => p._id !== projectId) }
-              : m
-          )
-        );
-        toast.success("Project removed");
+  const handleRemoveProject = (mbId: string, projectId: string) => {
+    startTransition(async () => {
+      try {
+        const res = await fetch(`/api/moodboards/${mbId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "remove", projectId }),
+        });
+        if (res.ok) {
+          setMoodboards((prev) =>
+            prev.map((m) =>
+              m._id === mbId
+                ? { ...m, projects: m.projects.filter((p) => p._id !== projectId) }
+                : m
+            )
+          );
+          toast.success("Project removed");
+        }
+      } catch {
+        toast.error("Failed to remove project");
       }
-    } catch {
-      toast.error("Failed to remove project");
-    }
+    });
   };
 
   return (
@@ -175,9 +187,10 @@ export default function MoodboardsManagerPage() {
           onChange={(e) => setNewName(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleCreate()}
           className="max-w-xs"
+          disabled={isPending}
         />
-        <Button onClick={handleCreate} disabled={creating || !newName.trim()}>
-          {creating ? (
+        <Button onClick={handleCreate} disabled={isPending || !newName.trim()}>
+          {isPending ? (
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
           ) : (
             <Plus className="mr-2 h-4 w-4" />
@@ -248,6 +261,7 @@ export default function MoodboardsManagerPage() {
                   variant="ghost"
                   size="icon"
                   className="h-7 w-7"
+                  disabled={isPending}
                   onClick={() => handleToggleVisibility(mb)}
                   title={`Make ${mb.visibility === "public" ? "private" : "public"}`}
                 >
@@ -261,6 +275,7 @@ export default function MoodboardsManagerPage() {
                   variant="ghost"
                   size="icon"
                   className="h-7 w-7 text-destructive"
+                  disabled={isPending}
                   onClick={() => handleDelete(mb._id)}
                 >
                   <Trash2 className="h-3.5 w-3.5" />
@@ -285,6 +300,7 @@ export default function MoodboardsManagerPage() {
                         />
                         <button
                           className="absolute -right-1.5 -top-1.5 hidden h-5 w-5 items-center justify-center rounded-full bg-destructive text-destructive-foreground group-hover:flex"
+                          disabled={isPending}
                           onClick={() => handleRemoveProject(mb._id, p._id)}
                         >
                           <X className="h-3 w-3" />
