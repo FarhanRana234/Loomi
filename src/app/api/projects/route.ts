@@ -13,10 +13,12 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get("limit") || "12");
     const tag = searchParams.get("tag");
     const userId = searchParams.get("userId");
+    const q = searchParams.get("q");
 
     const query: Record<string, unknown> = { status: "published" };
     if (tag) query.tags = tag;
     if (userId) query.userId = userId;
+    if (q) query.$text = { $search: q };
 
     const total = await Project.countDocuments(query);
     const items = await Project.find(query)

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import { Navbar } from "@/components/features/Navbar";
@@ -36,7 +37,9 @@ export default function RootLayout({
           enableSystem={false}
           disableTransitionOnChange
         >
-          <Navbar />
+          <Suspense>
+            <Navbar />
+          </Suspense>
           <main>{children}</main>
         </ThemeProvider>
       </body>

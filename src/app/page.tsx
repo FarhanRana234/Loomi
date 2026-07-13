@@ -1,3 +1,6 @@
+"use client";
+
+import { Suspense } from "react";
 import { FeedMasonry } from "@/components/features/FeedMasonry";
 import { NewsletterForm } from "@/components/features/NewsletterForm";
 import { Badge } from "@/components/ui/badge";
@@ -21,7 +24,9 @@ export default function HomePage() {
         </div>
       </div>
 
-      <FeedMasonry />
+      <Suspense fallback={null}>
+        <FeedMasonry />
+      </Suspense>
 
       <NewsletterForm />
     </div>

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Heart, Share2, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import type { IProject } from "@/types";
@@ -120,9 +121,12 @@ export default function ProjectDetailPage() {
               {project.title}
             </h1>
             <div className="mt-3 flex items-center gap-3">
-              <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-xs font-medium">
-                {author.username?.slice(0, 2).toUpperCase()}
-              </div>
+              <Avatar className="h-8 w-8">
+                <AvatarImage src={author.avatarUrl} alt={author.username} />
+                <AvatarFallback className="text-xs">
+                  {author.username?.slice(0, 2).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
               <span className="text-sm font-medium">{author.username}</span>
             </div>
           </div>

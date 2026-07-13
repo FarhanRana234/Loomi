@@ -1,20 +1,27 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import { ProjectCard } from "./ProjectCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { IProject } from "@/types";
 
 export function FeedMasonry() {
+  const searchParams = useSearchParams();
+  const q = searchParams.get("q") || "";
+  const tag = searchParams.get("tag") || "";
   const [projects, setProjects] = useState<IProject[]>([]);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [hasMore, setHasMore] = useState(true);
 
-  const fetchProjects = useCallback(async (pageNum: number) => {
+  const fetchProjects = useCallback(async (pageNum: number, search: string, searchTag: string) => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/projects?page=${pageNum}&limit=12`);
+      const params = new URLSearchParams({ page: String(pageNum), limit: "12" });
+      if (search) params.set("q", search);
+      if (searchTag) params.set("tag", searchTag);
+      const res = await fetch(`/api/projects?${params}`);
       if (res.ok) {
         const data = await res.json();
         if (pageNum === 1) {
@@ -31,8 +38,9 @@ export function FeedMasonry() {
   }, []);
 
   useEffect(() => {
-    fetchProjects(1);
-  }, [fetchProjects]);
+    setPage(1);
+    fetchProjects(1, q, tag);
+  }, [q, tag, fetchProjects]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -43,7 +51,7 @@ export function FeedMasonry() {
       ) {
         setPage((p) => {
           const next = p + 1;
-          fetchProjects(next);
+          fetchProjects(next, q, tag);
           return next;
         });
       }
@@ -51,10 +59,16 @@ export function FeedMasonry() {
 
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
-  }, [loading, hasMore, fetchProjects]);
+  }, [loading, hasMore, fetchProjects, q, tag]);
 
   return (
     <div>
+      {q && (
+        <p className="mb-4 text-sm text-muted-foreground">
+          Showing results for &ldquo;{q}&rdquo;
+        </p>
+      )}
+
       <div className="columns-1 gap-4 sm:columns-2 lg:columns-3 xl:columns-4">
         {projects.map((project) => (
           <ProjectCard key={project._id} project={project} />
@@ -76,10 +90,10 @@ export function FeedMasonry() {
       {!loading && projects.length === 0 && (
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <p className="text-lg font-medium text-muted-foreground">
-            No projects yet
+            {q ? "No results found" : "No projects yet"}
           </p>
           <p className="mt-1 text-sm text-muted-foreground/60">
-            Be the first to share your work with the community.
+            {q ? "Try a different search term." : "Be the first to share your work with the community."}
           </p>
         </div>
       )}
