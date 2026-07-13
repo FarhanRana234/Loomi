@@ -3,6 +3,21 @@ import { connectToDatabase } from "@/lib/db";
 import Project from "@/models/Project";
 import { verifyRequest } from "@/lib/auth";
 import User from "@/models/User";
+import { isVideoUrl, getThumbnailUrl } from "@/lib/cloudinary";
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type LeanProject = any;
+
+function enrichProject(p: LeanProject): Record<string, unknown> {
+  const enriched: Record<string, unknown> = { ...p };
+  if (p.cloudinaryPublicId && isVideoUrl(p.mediaUrl)) {
+    enriched.thumbnailUrl = getThumbnailUrl(
+      p.cloudinaryPublicId,
+      !!p.protected
+    );
+  }
+  return enriched;
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -42,7 +57,13 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      data: { items, total, page, limit, totalPages: Math.ceil(total / limit) },
+      data: {
+        items: items.map(enrichProject),
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
     });
   } catch (error) {
     console.error("GET /api/admin/projects error:", error);

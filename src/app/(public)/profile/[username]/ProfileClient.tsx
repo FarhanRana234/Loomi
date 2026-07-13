@@ -20,6 +20,7 @@ interface ProjectThumb {
   _id: string;
   title: string;
   mediaUrl: string;
+  thumbnailUrl?: string;
   likes: string[];
   views: number;
   category: string;
@@ -29,7 +30,7 @@ interface MoodboardCard {
   _id: string;
   name: string;
   visibility: string;
-  projects: { _id: string; title: string; mediaUrl: string }[];
+  projects: { _id: string; title: string; mediaUrl: string; thumbnailUrl?: string }[];
 }
 
 interface ProfileClientProps {
@@ -154,7 +155,7 @@ export default function ProfileClient({
                   className="group relative aspect-square overflow-hidden rounded-lg"
                 >
                   <img
-                    src={project.mediaUrl}
+                    src={project.thumbnailUrl || project.mediaUrl}
                     alt={project.title}
                     className="h-full w-full object-cover transition-transform group-hover:scale-105"
                     loading="lazy"
@@ -211,7 +212,7 @@ export default function ProfileClient({
                           className="aspect-square overflow-hidden rounded-md"
                         >
                           <img
-                            src={p.mediaUrl}
+                            src={p.thumbnailUrl || p.mediaUrl}
                             alt={p.title}
                             className="h-full w-full object-cover"
                             loading="lazy"

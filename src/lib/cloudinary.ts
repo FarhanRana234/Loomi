@@ -33,3 +33,23 @@ export function signUrl(publicId: string, options: {
     expires_at: Math.floor(Date.now() / 1000) + (options.expiresInSeconds || 3600),
   });
 }
+
+export function getThumbnailUrl(
+  publicId: string,
+  isProtected: boolean
+): string {
+  const c = getCloudinary();
+  if (isProtected) {
+    return signUrl(publicId, {
+      resource_type: "video",
+      format: "jpg",
+      type: "authenticated",
+      expiresInSeconds: 3600,
+    });
+  }
+  return c.url(publicId, {
+    resource_type: "video",
+    format: "jpg",
+    secure: true,
+  });
+}

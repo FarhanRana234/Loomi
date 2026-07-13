@@ -56,7 +56,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
       <Link href={`/project/${project._id}`}>
         <div className="relative overflow-hidden">
           <img
-            src={project.mediaUrl}
+            src={project.thumbnailUrl || project.mediaUrl}
             alt={project.title}
             className="w-full object-cover transition-transform duration-300 group-hover:scale-105"
             loading="lazy"

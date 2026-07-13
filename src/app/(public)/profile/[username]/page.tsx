@@ -5,6 +5,7 @@ import User from "@/models/User";
 import Project from "@/models/Project";
 import Moodboard from "@/models/Moodboard";
 import { getAdminAuth } from "@/lib/firebase-admin";
+import { isVideoUrl, getThumbnailUrl } from "@/lib/cloudinary";
 import ProfileClient from "./ProfileClient";
 
 interface PageParams {
@@ -26,7 +27,7 @@ export default async function ProfilePage({ params }: PageParams) {
       .sort({ createdAt: -1 })
       .lean(),
     Moodboard.find({ userId: profileOwner.firebaseId, visibility: "public" })
-      .populate("projects", "title mediaUrl userId likes")
+      .populate("projects", "title mediaUrl cloudinaryPublicId protected likes")
       .lean(),
   ]);
 
@@ -55,14 +56,20 @@ export default async function ProfilePage({ params }: PageParams) {
   };
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const serializedProjects = (projects as any[]).map((p) => ({
-    _id: String(p._id),
-    title: p.title as string,
-    mediaUrl: p.mediaUrl as string,
-    likes: (p.likes as string[]) || [],
-    views: (p.views as number) || 0,
-    category: (p.category as string) || "",
-  }));
+  const serializedProjects = (projects as any[]).map((p) => {
+    const isVideo = p.cloudinaryPublicId && isVideoUrl(p.mediaUrl as string);
+    return {
+      _id: String(p._id),
+      title: p.title as string,
+      mediaUrl: p.mediaUrl as string,
+      thumbnailUrl: isVideo
+        ? getThumbnailUrl(p.cloudinaryPublicId as string, !!p.protected)
+        : undefined,
+      likes: (p.likes as string[]) || [],
+      views: (p.views as number) || 0,
+      category: (p.category as string) || "",
+    };
+  });
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const serializedMoodboards = (visibleMoodboards as any[]).map((m) => ({
@@ -70,11 +77,17 @@ export default async function ProfilePage({ params }: PageParams) {
     name: m.name as string,
     visibility: (m.visibility as string) || "public",
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    projects: ((m.projects || []) as any[]).map((p) => ({
-      _id: String(p._id),
-      title: (p.title as string) || "",
-      mediaUrl: (p.mediaUrl as string) || "",
-    })),
+    projects: ((m.projects || []) as any[]).map((p) => {
+      const isVideo = p.cloudinaryPublicId && isVideoUrl(p.mediaUrl as string);
+      return {
+        _id: String(p._id),
+        title: (p.title as string) || "",
+        mediaUrl: (p.mediaUrl as string) || "",
+        thumbnailUrl: isVideo
+          ? getThumbnailUrl(p.cloudinaryPublicId as string, !!p.protected)
+          : undefined,
+      };
+    }),
   }));
 
   return (

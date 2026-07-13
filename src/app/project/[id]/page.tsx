@@ -191,13 +191,14 @@ export default function ProjectDetailPage() {
           {project.mediaUrl.includes(".mp4") ||
           project.mediaUrl.includes("video") ? (
             <video
-              src={project.mediaUrl}
+              src={(project as unknown as { signedVideoUrl?: string }).signedVideoUrl || project.mediaUrl}
+              poster={project.thumbnailUrl}
               controls
               className="w-full rounded-xl object-cover"
             />
           ) : (
             <img
-              src={protectedUrl}
+              src={(project as unknown as { signedImageUrl?: string }).signedImageUrl || protectedUrl}
               alt={project.title}
               className="w-full rounded-xl object-cover"
               onContextMenu={(e) => isProtected && e.preventDefault()}

@@ -5,7 +5,7 @@ import Project from "@/models/Project";
 import User from "@/models/User";
 import Moodboard from "@/models/Moodboard";
 import { verifyRequest } from "@/lib/auth";
-import { isVideoUrl, signUrl, getCloudinary } from "@/lib/cloudinary";
+import { isVideoUrl, signUrl, getCloudinary, getThumbnailUrl } from "@/lib/cloudinary";
 
 function isValidObjectId(id: string): boolean {
   return mongoose.Types.ObjectId.isValid(id);
@@ -53,26 +53,21 @@ export async function GET(
       const isProtected = !!project.protected;
       const isVideo = isVideoUrl(url);
 
-      if (isProtected || isVideo) {
-        if (isVideo) {
-          enriched.signedVideoUrl = signUrl(publicId, {
-            resource_type: "video",
-            type: "authenticated",
-            expiresInSeconds: 3600,
-          });
-          enriched.signedThumbnailUrl = signUrl(publicId, {
-            resource_type: "video",
-            format: "jpg",
-            type: "authenticated",
-            expiresInSeconds: 3600,
-          });
-        } else if (isProtected) {
-          enriched.signedImageUrl = signUrl(publicId, {
-            resource_type: "image",
-            type: "authenticated",
-            expiresInSeconds: 3600,
-          });
-        }
+      if (isVideo) {
+        enriched.thumbnailUrl = getThumbnailUrl(publicId, isProtected);
+        enriched.signedVideoUrl = isProtected
+          ? signUrl(publicId, {
+              resource_type: "video",
+              type: "authenticated",
+              expiresInSeconds: 3600,
+            })
+          : url;
+      } else if (isProtected) {
+        enriched.signedImageUrl = signUrl(publicId, {
+          resource_type: "image",
+          type: "authenticated",
+          expiresInSeconds: 3600,
+        });
       }
     }
 

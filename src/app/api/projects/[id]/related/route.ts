@@ -2,9 +2,24 @@ import { NextRequest, NextResponse } from "next/server";
 import mongoose from "mongoose";
 import { connectToDatabase } from "@/lib/db";
 import Project from "@/models/Project";
+import { isVideoUrl, getThumbnailUrl } from "@/lib/cloudinary";
 
 function isValidObjectId(id: string): boolean {
   return mongoose.Types.ObjectId.isValid(id);
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type LeanProject = any;
+
+function enrichProject(p: LeanProject): Record<string, unknown> {
+  const enriched: Record<string, unknown> = { ...p };
+  if (p.cloudinaryPublicId && isVideoUrl(p.mediaUrl)) {
+    enriched.thumbnailUrl = getThumbnailUrl(
+      p.cloudinaryPublicId,
+      !!p.protected
+    );
+  }
+  return enriched;
 }
 
 export async function GET(
@@ -41,7 +56,10 @@ export async function GET(
       .limit(8)
       .lean();
 
-    return NextResponse.json({ success: true, data: related });
+    return NextResponse.json({
+      success: true,
+      data: related.map(enrichProject),
+    });
   } catch (error: unknown) {
     if (error instanceof Error && error.name === "CastError") {
       return NextResponse.json(

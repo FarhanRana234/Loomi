@@ -3,6 +3,27 @@ import { connectToDatabase } from "@/lib/db";
 import Moodboard from "@/models/Moodboard";
 import { getAdminAuth } from "@/lib/firebase-admin";
 import { cookies } from "next/headers";
+import { isVideoUrl, getThumbnailUrl } from "@/lib/cloudinary";
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type LeanMoodboard = any;
+
+function enrichMoodboardProjects(moodboard: LeanMoodboard): LeanMoodboard {
+  const projects = moodboard.projects || [];
+  moodboard.projects = projects.map((p: Record<string, unknown>) => {
+    if (p.cloudinaryPublicId && isVideoUrl(p.mediaUrl as string)) {
+      return {
+        ...p,
+        thumbnailUrl: getThumbnailUrl(
+          p.cloudinaryPublicId as string,
+          !!p.protected
+        ),
+      };
+    }
+    return p;
+  });
+  return moodboard;
+}
 
 async function getAuthUid(): Promise<string | null> {
   const cookieStore = await cookies();
@@ -16,6 +37,8 @@ async function getAuthUid(): Promise<string | null> {
   }
 }
 
+const POPULATE_FIELDS = "title mediaUrl cloudinaryPublicId protected userId likes";
+
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
@@ -26,20 +49,21 @@ export async function GET(request: NextRequest) {
     await connectToDatabase();
 
     if (userId) {
-      // External fetch (profile view) — filter by visibility
       const query: Record<string, unknown> = { userId };
       if (publicOnly) query.visibility = "public";
       if (projectId) query.projects = projectId;
 
       const moodboards = await Moodboard.find(query)
-        .populate("projects", "title mediaUrl userId likes")
+        .populate("projects", POPULATE_FIELDS)
         .sort({ updatedAt: -1 })
         .lean();
 
-      return NextResponse.json({ success: true, data: moodboards });
+      return NextResponse.json({
+        success: true,
+        data: moodboards.map(enrichMoodboardProjects),
+      });
     }
 
-    // Authenticated fetch (own moodboards) — show all
     const uid = await getAuthUid();
     if (!uid) {
       return NextResponse.json(
@@ -52,11 +76,14 @@ export async function GET(request: NextRequest) {
     if (projectId) query.projects = projectId;
 
     const moodboards = await Moodboard.find(query)
-      .populate("projects", "title mediaUrl userId likes")
+      .populate("projects", POPULATE_FIELDS)
       .sort({ updatedAt: -1 })
       .lean();
 
-    return NextResponse.json({ success: true, data: moodboards });
+    return NextResponse.json({
+      success: true,
+      data: moodboards.map(enrichMoodboardProjects),
+    });
   } catch (error) {
     console.error("GET /api/moodboards error:", error);
     return NextResponse.json(

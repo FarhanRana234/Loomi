@@ -20,6 +20,7 @@ export interface IProject {
   tags: string[];
   cloudinaryPublicId: string;
   mediaUrl: string;
+  thumbnailUrl?: string;
   userId: IUser;
   likes: string[];
   views: number;

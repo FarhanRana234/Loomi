@@ -3,6 +3,27 @@ import { connectToDatabase } from "@/lib/db";
 import Moodboard from "@/models/Moodboard";
 import { getAdminAuth } from "@/lib/firebase-admin";
 import { cookies } from "next/headers";
+import { isVideoUrl, getThumbnailUrl } from "@/lib/cloudinary";
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type LeanMoodboard = any;
+
+function enrichMoodboardProjects(moodboard: LeanMoodboard): LeanMoodboard {
+  const projects = moodboard.projects || [];
+  moodboard.projects = projects.map((p: Record<string, unknown>) => {
+    if (p.cloudinaryPublicId && isVideoUrl(p.mediaUrl as string)) {
+      return {
+        ...p,
+        thumbnailUrl: getThumbnailUrl(
+          p.cloudinaryPublicId as string,
+          !!p.protected
+        ),
+      };
+    }
+    return p;
+  });
+  return moodboard;
+}
 
 async function getAuthUid(): Promise<string | null> {
   const cookieStore = await cookies();
@@ -15,6 +36,8 @@ async function getAuthUid(): Promise<string | null> {
     return null;
   }
 }
+
+const POPULATE_FIELDS = "title mediaUrl cloudinaryPublicId protected userId likes";
 
 export async function PATCH(
   request: NextRequest,
@@ -63,10 +86,13 @@ export async function PATCH(
     await moodboard.save();
 
     const populated = await Moodboard.findById(moodboard._id)
-      .populate("projects", "title mediaUrl userId likes")
+      .populate("projects", POPULATE_FIELDS)
       .lean();
 
-    return NextResponse.json({ success: true, data: populated });
+    return NextResponse.json({
+      success: true,
+      data: enrichMoodboardProjects(populated),
+    });
   } catch (error) {
     console.error("PATCH /api/moodboards/[id] error:", error);
     return NextResponse.json(

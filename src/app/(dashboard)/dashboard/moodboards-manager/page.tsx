@@ -19,6 +19,7 @@ interface MoodboardProject {
   _id: string;
   title: string;
   mediaUrl: string;
+  thumbnailUrl?: string;
 }
 
 interface Moodboard {
@@ -287,7 +288,7 @@ export default function MoodboardsManagerPage() {
                     {mb.projects.map((p) => (
                       <div key={p._id} className="group relative">
                         <img
-                          src={p.mediaUrl}
+                          src={p.thumbnailUrl || p.mediaUrl}
                           alt={p.title}
                           className="aspect-square w-full rounded-lg object-cover"
                           loading="lazy"

@@ -156,7 +156,7 @@ export default function DashboardPage() {
                   className="flex items-center gap-4 rounded-xl border border-border p-3"
                 >
                   <img
-                    src={project.mediaUrl}
+                    src={(project.thumbnailUrl || project.mediaUrl) as string}
                     alt={project.title}
                     className="h-12 w-12 rounded-lg object-cover"
                   />
