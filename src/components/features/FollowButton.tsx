@@ -3,7 +3,6 @@
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 interface FollowButtonProps {
@@ -22,7 +21,6 @@ export default function FollowButton({
   const router = useRouter();
   const [isFollowing, setIsFollowing] = useState(initialIsFollowing);
   const [followersCount, setFollowersCount] = useState(initialFollowersCount);
-  const [isLoading, setIsLoading] = useState(false);
 
   const toggle = useCallback(async () => {
     const wasFollowing = isFollowing;
@@ -30,7 +28,6 @@ export default function FollowButton({
 
     setIsFollowing(!wasFollowing);
     setFollowersCount(wasFollowing ? prevCount - 1 : prevCount + 1);
-    setIsLoading(true);
 
     try {
       const method = wasFollowing ? "DELETE" : "POST";
@@ -51,8 +48,6 @@ export default function FollowButton({
       setIsFollowing(wasFollowing);
       setFollowersCount(prevCount);
       toast.error("Network error. Please try again.");
-    } finally {
-      setIsLoading(false);
     }
   }, [isFollowing, followersCount, targetUserId, router]);
 
@@ -61,15 +56,8 @@ export default function FollowButton({
       variant={isFollowing ? "outline" : "default"}
       size={size}
       onClick={toggle}
-      disabled={isLoading}
     >
-      {isLoading ? (
-        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-      ) : isFollowing ? (
-        "Following"
-      ) : (
-        "Follow"
-      )}
+      {isFollowing ? "Following" : "Follow"}
     </Button>
   );
 }

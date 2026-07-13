@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { Heart } from "lucide-react";
 import { toast } from "sonner";
@@ -19,8 +19,6 @@ export function ProjectCard({ project }: ProjectCardProps) {
     user ? project.likes.includes(user.firebaseId) : false
   );
   const [likeCount, setLikeCount] = useState(project.likes.length);
-  const [isPending, startTransition] = useTransition();
-
   const handleLike = (e: React.MouseEvent) => {
     e.preventDefault();
 
@@ -29,26 +27,23 @@ export function ProjectCard({ project }: ProjectCardProps) {
       return;
     }
 
-    startTransition(async () => {
-      const prevLiked = liked;
-      const prevCount = likeCount;
+    const prevLiked = liked;
+    const prevCount = likeCount;
 
-      setLiked(!liked);
-      setLikeCount(liked ? likeCount - 1 : likeCount + 1);
+    setLiked(!liked);
+    setLikeCount(liked ? likeCount - 1 : likeCount + 1);
 
-      try {
-        const res = await fetch(`/api/projects/${project._id}/like`, {
-          method: "POST",
-        });
+    fetch(`/api/projects/${project._id}/like`, { method: "POST" })
+      .then((res) => {
         if (!res.ok) {
           setLiked(prevLiked);
           setLikeCount(prevCount);
         }
-      } catch {
+      })
+      .catch(() => {
         setLiked(prevLiked);
         setLikeCount(prevCount);
-      }
-    });
+      });
   };
 
   return (
@@ -95,7 +90,6 @@ export function ProjectCard({ project }: ProjectCardProps) {
           size="sm"
           className={cn("h-7 gap-1 px-2", liked && "text-red-500")}
           onClick={handleLike}
-          disabled={isPending}
         >
           <Heart
             className={cn("h-3.5 w-3.5", liked && "fill-current")}

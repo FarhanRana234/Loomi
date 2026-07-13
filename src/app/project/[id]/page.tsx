@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition, useCallback } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { Heart, Share2, ArrowLeft, BookmarkPlus, Plus, FolderOpen } from "lucide-react";
@@ -34,7 +34,7 @@ export default function ProjectDetailPage() {
   const [loading, setLoading] = useState(true);
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
-  const [isPending, startTransition] = useTransition();
+
   const [moodboards, setMoodboards] = useState<MoodboardMini[]>([]);
 
   useEffect(() => {
@@ -100,25 +100,23 @@ export default function ProjectDetailPage() {
       return;
     }
 
-    startTransition(async () => {
-      const prevLiked = liked;
-      const prevCount = likeCount;
-      setLiked(!liked);
-      setLikeCount(liked ? likeCount - 1 : likeCount + 1);
+    const prevLiked = liked;
+    const prevCount = likeCount;
 
-      try {
-        const res = await fetch(`/api/projects/${params.id}/like`, {
-          method: "POST",
-        });
+    setLiked(!liked);
+    setLikeCount(liked ? likeCount - 1 : likeCount + 1);
+
+    fetch(`/api/projects/${params.id}/like`, { method: "POST" })
+      .then((res) => {
         if (!res.ok) {
           setLiked(prevLiked);
           setLikeCount(prevCount);
         }
-      } catch {
+      })
+      .catch(() => {
         setLiked(prevLiked);
         setLikeCount(prevCount);
-      }
-    });
+      });
   };
 
   const handleShare = async () => {
@@ -255,7 +253,6 @@ export default function ProjectDetailPage() {
               variant={liked ? "default" : "outline"}
               className={cn(liked && "bg-foreground text-background")}
               onClick={handleLike}
-              disabled={isPending}
             >
               <Heart
                 className={cn("mr-2 h-4 w-4", liked && "fill-current")}
