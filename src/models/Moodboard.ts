@@ -2,24 +2,20 @@ import mongoose, { Schema, Document } from "mongoose";
 
 export interface IMoodboardDocument extends Document {
   name: string;
-  description: string;
-  userId: mongoose.Types.ObjectId;
-  projectIds: mongoose.Types.ObjectId[];
+  userId: string;
+  projects: mongoose.Types.ObjectId[];
   isPublic: boolean;
 }
 
 const MoodboardSchema = new Schema<IMoodboardDocument>(
   {
-    name: { type: String, required: true },
-    description: { type: String, default: "" },
-    userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
-    projectIds: [{ type: Schema.Types.ObjectId, ref: "Project" }],
-    isPublic: { type: Boolean, default: false },
+    name: { type: String, required: true, trim: true },
+    userId: { type: String, required: true, index: true },
+    projects: [{ type: Schema.Types.ObjectId, ref: "Project" }],
+    isPublic: { type: Boolean, default: true },
   },
   { timestamps: true }
 );
-
-MoodboardSchema.index({ userId: 1 });
 
 export default mongoose.models.Moodboard ||
   mongoose.model<IMoodboardDocument>("Moodboard", MoodboardSchema);

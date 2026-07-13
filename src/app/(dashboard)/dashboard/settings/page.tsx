@@ -22,6 +22,7 @@ export default function SettingsPage() {
   const setUser = useUserStore((s) => s.setUser);
   const [username, setUsername] = useState("");
   const [bio, setBio] = useState("");
+  const [website, setWebsite] = useState("");
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(true);
@@ -37,6 +38,7 @@ export default function SettingsPage() {
     if (storeUser) {
       setUsername(storeUser.username);
       setBio(storeUser.bio || "");
+      setWebsite(storeUser.website || "");
       setSocialLinks(storeUser.socialLinks || []);
       setLoading(false);
     } else {
@@ -49,6 +51,7 @@ export default function SettingsPage() {
           if (d.success && d.data) {
             setUsername(d.data.username);
             setBio(d.data.bio || "");
+            setWebsite(d.data.website || "");
             setSocialLinks(d.data.socialLinks || []);
           }
         })
@@ -127,6 +130,7 @@ export default function SettingsPage() {
           username,
           bio,
           avatarUrl: finalAvatarUrl,
+          website,
           socialLinks,
         }),
       });
@@ -153,6 +157,7 @@ export default function SettingsPage() {
   const hasChanges =
     username !== (storeUser?.username || "") ||
     bio !== (storeUser?.bio || "") ||
+    website !== (storeUser?.website || "") ||
     avatarFile !== null ||
     JSON.stringify(socialLinks) !== JSON.stringify(storeUser?.socialLinks || []);
 
@@ -262,12 +267,21 @@ export default function SettingsPage() {
                 onChange={(e) => setBio(e.target.value)}
                 placeholder="Tell the community about yourself..."
                 rows={3}
-                maxLength={200}
+                maxLength={150}
                 className="w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               />
               <p className="text-xs text-muted-foreground">
-                {bio.length}/200
+                {bio.length}/150
               </p>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Website</label>
+              <Input
+                value={website}
+                onChange={(e) => setWebsite(e.target.value)}
+                placeholder="https://yourwebsite.com"
+              />
             </div>
 
             <div className="space-y-2">

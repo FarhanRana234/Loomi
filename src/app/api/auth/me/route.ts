@@ -46,7 +46,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { username, bio, avatarUrl, socialLinks } = body;
+    const { username, bio, avatarUrl, website, socialLinks } = body;
 
     if (username && username !== user.username) {
       const existing = await User.findOne({ username, _id: { $ne: user._id } });
@@ -61,6 +61,7 @@ export async function PATCH(request: NextRequest) {
 
     if (bio !== undefined) user.bio = bio;
     if (avatarUrl !== undefined) user.avatarUrl = avatarUrl;
+    if (website !== undefined) user.website = website;
     if (socialLinks !== undefined) user.socialLinks = socialLinks;
 
     await user.save();

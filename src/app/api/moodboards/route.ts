@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
 import Moodboard from "@/models/Moodboard";
-import User from "@/models/User";
 import { getAdminAuth } from "@/lib/firebase-admin";
 import { cookies } from "next/headers";
 
@@ -28,22 +27,15 @@ export async function GET(request: NextRequest) {
     }
 
     await connectToDatabase();
-    const user = await User.findOne({ firebaseId: uid });
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: "User not found" },
-        { status: 404 }
-      );
-    }
 
     const searchParams = request.nextUrl.searchParams;
     const projectId = searchParams.get("projectId");
 
-    const query: Record<string, unknown> = { userId: user._id };
-    if (projectId) query.projectIds = projectId;
+    const query: Record<string, unknown> = { userId: uid };
+    if (projectId) query.projects = projectId;
 
     const moodboards = await Moodboard.find(query)
-      .populate("projectIds", "title mediaUrl userId likes")
+      .populate("projects", "title mediaUrl userId likes")
       .sort({ updatedAt: -1 })
       .lean();
 
@@ -68,16 +60,9 @@ export async function POST(request: NextRequest) {
     }
 
     await connectToDatabase();
-    const user = await User.findOne({ firebaseId: uid });
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: "User not found" },
-        { status: 404 }
-      );
-    }
 
     const body = await request.json();
-    const { name, description, isPublic } = body;
+    const { name, isPublic } = body;
 
     if (!name) {
       return NextResponse.json(
@@ -88,9 +73,8 @@ export async function POST(request: NextRequest) {
 
     const moodboard = await Moodboard.create({
       name,
-      description: description || "",
-      userId: user._id,
-      isPublic: !!isPublic,
+      userId: uid,
+      isPublic: isPublic !== undefined ? !!isPublic : true,
     });
 
     return NextResponse.json({ success: true, data: moodboard }, { status: 201 });

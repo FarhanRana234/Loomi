@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Eye, Heart, FolderOpen, Plus, Bookmark } from "lucide-react";
+import { Eye, Heart, FolderOpen, Plus } from "lucide-react";
 import { AnalyticsChart } from "@/components/features/AnalyticsChart";
 import { useUserStore } from "@/hooks/useUserStore";
 import type { IProject, IUser } from "@/types";
@@ -47,12 +47,6 @@ export default function DashboardPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button asChild variant="outline">
-            <Link href="/dashboard/moodboards">
-              <Bookmark className="mr-2 h-4 w-4" />
-              Moodboards
-            </Link>
-          </Button>
           <Button asChild>
             <Link href="/dashboard/upload">
               <Plus className="mr-2 h-4 w-4" />

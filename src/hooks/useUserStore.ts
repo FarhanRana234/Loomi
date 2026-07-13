@@ -10,6 +10,7 @@ export interface User {
   role: "user" | "admin";
   bio: string;
   avatarUrl: string;
+  website: string;
   socialLinks: { label: string; url: string }[];
 }
 

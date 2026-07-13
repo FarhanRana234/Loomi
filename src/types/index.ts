@@ -6,6 +6,7 @@ export interface IUser {
   role: "user" | "admin";
   bio: string;
   avatarUrl: string;
+  website: string;
   socialLinks: { label: string; url: string }[];
   createdAt: Date;
   updatedAt: Date;
@@ -15,6 +16,7 @@ export interface IProject {
   _id: string;
   title: string;
   description: string;
+  category: string;
   tags: string[];
   cloudinaryPublicId: string;
   mediaUrl: string;
@@ -30,9 +32,8 @@ export interface IProject {
 export interface IMoodboard {
   _id: string;
   name: string;
-  description: string;
   userId: string;
-  projectIds: IProject[];
+  projects: IProject[];
   isPublic: boolean;
   createdAt: Date;
   updatedAt: Date;

@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
 import Moodboard from "@/models/Moodboard";
-import User from "@/models/User";
 import { getAdminAuth } from "@/lib/firebase-admin";
 import { cookies } from "next/headers";
 
@@ -32,15 +31,8 @@ export async function PATCH(
     }
 
     await connectToDatabase();
-    const user = await User.findOne({ firebaseId: uid });
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: "User not found" },
-        { status: 404 }
-      );
-    }
 
-    const moodboard = await Moodboard.findOne({ _id: id, userId: user._id });
+    const moodboard = await Moodboard.findOne({ _id: id, userId: uid });
     if (!moodboard) {
       return NextResponse.json(
         { success: false, error: "Moodboard not found" },
@@ -49,26 +41,25 @@ export async function PATCH(
     }
 
     const body = await request.json();
-    const { action, projectId, name, description, isPublic } = body;
+    const { action, projectId, name, isPublic } = body;
 
     if (action === "add" && projectId) {
-      if (!moodboard.projectIds.includes(projectId)) {
-        moodboard.projectIds.push(projectId);
+      if (!moodboard.projects.includes(projectId)) {
+        moodboard.projects.push(projectId);
       }
     } else if (action === "remove" && projectId) {
-      moodboard.projectIds = moodboard.projectIds.filter(
+      moodboard.projects = moodboard.projects.filter(
         (p: { toString(): string }) => p.toString() !== projectId
       );
-    } else if (name !== undefined || description !== undefined || isPublic !== undefined) {
+    } else if (name !== undefined || isPublic !== undefined) {
       if (name !== undefined) moodboard.name = name;
-      if (description !== undefined) moodboard.description = description;
       if (isPublic !== undefined) moodboard.isPublic = isPublic;
     }
 
     await moodboard.save();
 
     const populated = await Moodboard.findById(moodboard._id)
-      .populate("projectIds", "title mediaUrl userId likes")
+      .populate("projects", "title mediaUrl userId likes")
       .lean();
 
     return NextResponse.json({ success: true, data: populated });
@@ -96,15 +87,8 @@ export async function DELETE(
     }
 
     await connectToDatabase();
-    const user = await User.findOne({ firebaseId: uid });
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: "User not found" },
-        { status: 404 }
-      );
-    }
 
-    await Moodboard.findOneAndDelete({ _id: id, userId: user._id });
+    await Moodboard.findOneAndDelete({ _id: id, userId: uid });
 
     return NextResponse.json({ success: true });
   } catch (error) {

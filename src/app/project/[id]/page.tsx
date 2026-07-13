@@ -1,22 +1,33 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useEffect, useState, useTransition, useCallback } from "react";
+import { useParams } from "next/navigation";
 import Link from "next/link";
-import { Heart, Share2, ArrowLeft, BookmarkPlus } from "lucide-react";
+import { Heart, Share2, ArrowLeft, BookmarkPlus, Plus, FolderOpen } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { useUserStore } from "@/hooks/useUserStore";
 import { ProjectCard } from "@/components/features/ProjectCard";
 import type { IProject } from "@/types";
 
+interface MoodboardMini {
+  _id: string;
+  name: string;
+}
+
 export default function ProjectDetailPage() {
   const params = useParams();
-  const router = useRouter();
   const user = useUserStore((s) => s.user);
   const [project, setProject] = useState<IProject | null>(null);
   const [related, setRelated] = useState<IProject[]>([]);
@@ -24,6 +35,7 @@ export default function ProjectDetailPage() {
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
   const [isPending, startTransition] = useTransition();
+  const [moodboards, setMoodboards] = useState<MoodboardMini[]>([]);
 
   useEffect(() => {
     fetch(`/api/projects/${params.id}`)
@@ -49,6 +61,38 @@ export default function ProjectDetailPage() {
         });
     }
   }, [params.id, project]);
+
+  const fetchMoodboards = useCallback(async () => {
+    if (!user) return;
+    try {
+      const res = await fetch("/api/moodboards");
+      if (res.ok) {
+        const d = await res.json();
+        if (d.success) setMoodboards(d.data || []);
+      }
+    } catch { /* silent */ }
+  }, [user]);
+
+  useEffect(() => {
+    fetchMoodboards();
+  }, [fetchMoodboards]);
+
+  const handleSaveToMoodboard = async (moodboardId: string) => {
+    try {
+      const res = await fetch(`/api/moodboards/${moodboardId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "add", projectId: project?._id }),
+      });
+      if (res.ok) {
+        toast.success("Saved to moodboard");
+      } else {
+        toast.error("Failed to save");
+      }
+    } catch {
+      toast.error("Failed to save");
+    }
+  };
 
   const handleLike = () => {
     if (!user) {
@@ -220,17 +264,39 @@ export default function ProjectDetailPage() {
               Share
             </Button>
             {user && !isOwner && (
-              <Button
-                variant="outline"
-                onClick={() =>
-                  router.push(
-                    `/dashboard/moodboards?add=${project._id}`
-                  )
-                }
-              >
-                <BookmarkPlus className="mr-2 h-4 w-4" />
-                Save
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline">
+                    <BookmarkPlus className="mr-2 h-4 w-4" />
+                    Save
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  {moodboards.length === 0 ? (
+                    <DropdownMenuItem disabled className="text-muted-foreground">
+                      <FolderOpen className="mr-2 h-4 w-4" />
+                      No moodboards yet
+                    </DropdownMenuItem>
+                  ) : (
+                    moodboards.map((mb) => (
+                      <DropdownMenuItem
+                        key={mb._id}
+                        onClick={() => handleSaveToMoodboard(mb._id)}
+                      >
+                        <FolderOpen className="mr-2 h-4 w-4" />
+                        {mb.name}
+                      </DropdownMenuItem>
+                    ))
+                  )}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link href={`/profile/${user.username}`}>
+                      <Plus className="mr-2 h-4 w-4" />
+                      Manage moodboards
+                    </Link>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             )}
           </div>
 

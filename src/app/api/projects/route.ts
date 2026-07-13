@@ -14,10 +14,12 @@ export async function GET(request: NextRequest) {
     const tag = searchParams.get("tag");
     const userId = searchParams.get("userId");
     const q = searchParams.get("q");
+    const category = searchParams.get("category");
 
     const query: Record<string, unknown> = { status: "published" };
     if (tag) query.tags = tag;
     if (userId) query.userId = userId;
+    if (category) query.category = category;
     if (q) {
       const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       const regex = new RegExp(escaped, "i");
@@ -66,7 +68,15 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { title, description, tags, cloudinaryPublicId, mediaUrl, protected: isProtected } = body;
+    const {
+      title,
+      description,
+      category,
+      tags,
+      cloudinaryPublicId,
+      mediaUrl,
+      protected: isProtected,
+    } = body;
 
     if (!title || !cloudinaryPublicId || !mediaUrl) {
       return NextResponse.json(
@@ -78,6 +88,7 @@ export async function POST(request: NextRequest) {
     const project = await Project.create({
       title: title.toLowerCase(),
       description: description || "",
+      category: category || "General",
       tags: (tags || []).map((t: string) => t.toLowerCase().trim()),
       cloudinaryPublicId,
       mediaUrl,
