@@ -8,6 +8,8 @@ export interface IUser {
   avatarUrl: string;
   website: string;
   socialLinks: { label: string; url: string }[];
+  followersCount: number;
+  followingCount: number;
   createdAt: Date;
   updatedAt: Date;
 }

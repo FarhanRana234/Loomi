@@ -9,6 +9,8 @@ export interface IUserDocument extends Document {
   avatarUrl: string;
   website: string;
   socialLinks: { label: string; url: string }[];
+  followersCount: number;
+  followingCount: number;
 }
 
 const UserSchema = new Schema<IUserDocument>(
@@ -56,6 +58,14 @@ const UserSchema = new Schema<IUserDocument>(
         },
       ],
       default: [],
+    },
+    followersCount: {
+      type: Number,
+      default: 0,
+    },
+    followingCount: {
+      type: Number,
+      default: 0,
     },
   },
   { timestamps: true }

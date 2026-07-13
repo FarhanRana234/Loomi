@@ -4,6 +4,7 @@ import { connectToDatabase } from "@/lib/db";
 import User from "@/models/User";
 import Project from "@/models/Project";
 import Moodboard from "@/models/Moodboard";
+import Follow from "@/models/Follow";
 import { getAdminAuth } from "@/lib/firebase-admin";
 import { isVideoUrl, getThumbnailUrl } from "@/lib/cloudinary";
 import ProfileClient from "./ProfileClient";
@@ -44,15 +45,28 @@ export default async function ProfilePage({ params }: PageParams) {
   }
 
   const isSelf = viewerUid === profileOwner.firebaseId;
+
+  let isFollowing = false;
+  if (viewerUid && !isSelf) {
+    const followDoc = await Follow.findOne({
+      followerId: viewerUid,
+      followingId: profileOwner.firebaseId,
+    }).lean();
+    isFollowing = !!followDoc;
+  }
+
   const visibleMoodboards = allMoodboards;
 
   const serializedUser = {
     _id: String(profileOwner._id),
+    firebaseId: profileOwner.firebaseId as string,
     username: profileOwner.username as string,
     bio: (profileOwner.bio as string) || "",
     avatarUrl: (profileOwner.avatarUrl as string) || "",
     website: (profileOwner.website as string) || "",
     socialLinks: (profileOwner.socialLinks as { label: string; url: string }[]) || [],
+    followersCount: (profileOwner.followersCount as number) || 0,
+    followingCount: (profileOwner.followingCount as number) || 0,
   };
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -96,6 +110,7 @@ export default async function ProfilePage({ params }: PageParams) {
       projects={serializedProjects}
       moodboards={serializedMoodboards}
       isSelf={isSelf}
+      isFollowing={isFollowing}
       projectCount={projects.length}
       moodboardCount={visibleMoodboards.length}
     />

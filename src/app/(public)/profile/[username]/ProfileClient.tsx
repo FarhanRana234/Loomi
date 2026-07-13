@@ -1,19 +1,25 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Grid3X3, FolderOpen, Lock, ExternalLink, Settings } from "lucide-react";
+import FollowButton from "@/components/features/FollowButton";
+import FollowersFollowingDialog from "@/components/features/FollowersFollowingDialog";
 
 interface ProfileUser {
   _id: string;
+  firebaseId: string;
   username: string;
   bio: string;
   avatarUrl: string;
   website: string;
   socialLinks: { label: string; url: string }[];
+  followersCount: number;
+  followingCount: number;
 }
 
 interface ProjectThumb {
@@ -38,6 +44,7 @@ interface ProfileClientProps {
   projects: ProjectThumb[];
   moodboards: MoodboardCard[];
   isSelf: boolean;
+  isFollowing: boolean;
   projectCount: number;
   moodboardCount: number;
 }
@@ -47,10 +54,12 @@ export default function ProfileClient({
   projects,
   moodboards,
   isSelf,
+  isFollowing,
   projectCount,
   moodboardCount,
 }: ProfileClientProps) {
   const initials = profileOwner.username.slice(0, 2).toUpperCase();
+  const [dialogType, setDialogType] = useState<"followers" | "following" | null>(null);
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
@@ -74,20 +83,36 @@ export default function ProfileClient({
                 </Link>
               </Button>
             ) : (
-              <Button variant="default" size="sm">
-                Follow
-              </Button>
+              <FollowButton
+                targetUserId={profileOwner.firebaseId}
+                initialIsFollowing={isFollowing}
+                initialFollowersCount={profileOwner.followersCount}
+              />
             )}
           </div>
 
-          <div className="mt-3 flex justify-center gap-4 text-sm sm:justify-start">
+          <div className="mt-3 flex justify-center gap-5 text-sm sm:justify-start">
             <span>
               <strong>{projectCount}</strong>{" "}
               <span className="text-muted-foreground">Projects</span>
             </span>
+            <button
+              onClick={() => setDialogType("followers")}
+              className="cursor-pointer transition-colors hover:opacity-70"
+            >
+              <strong>{profileOwner.followersCount}</strong>{" "}
+              <span className="text-muted-foreground">Followers</span>
+            </button>
+            <button
+              onClick={() => setDialogType("following")}
+              className="cursor-pointer transition-colors hover:opacity-70"
+            >
+              <strong>{profileOwner.followingCount}</strong>{" "}
+              <span className="text-muted-foreground">Following</span>
+            </button>
             <span>
               <strong>{moodboardCount}</strong>{" "}
-              <span className="text-muted-foreground">Moodboards</span>
+              <span className="text-muted-foreground">Boards</span>
             </span>
           </div>
 
@@ -227,6 +252,23 @@ export default function ProfileClient({
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Followers / Following Dialog */}
+      {dialogType && (
+        <FollowersFollowingDialog
+          open={!!dialogType}
+          onOpenChange={(open) => {
+            if (!open) setDialogType(null);
+          }}
+          userId={profileOwner.firebaseId}
+          type={dialogType}
+          count={
+            dialogType === "followers"
+              ? profileOwner.followersCount
+              : profileOwner.followingCount
+          }
+        />
+      )}
     </div>
   );
 }
