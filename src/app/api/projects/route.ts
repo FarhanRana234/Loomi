@@ -18,7 +18,11 @@ export async function GET(request: NextRequest) {
     const query: Record<string, unknown> = { status: "published" };
     if (tag) query.tags = tag;
     if (userId) query.userId = userId;
-    if (q) query.$text = { $search: q };
+    if (q) {
+      const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const regex = new RegExp(escaped, "i");
+      query.$or = [{ title: regex }, { tags: regex }, { description: regex }];
+    }
 
     const total = await Project.countDocuments(query);
     const items = await Project.find(query)
@@ -72,9 +76,9 @@ export async function POST(request: NextRequest) {
     }
 
     const project = await Project.create({
-      title,
+      title: title.toLowerCase(),
       description: description || "",
-      tags: tags || [],
+      tags: (tags || []).map((t: string) => t.toLowerCase().trim()),
       cloudinaryPublicId,
       mediaUrl,
       userId: user._id,
