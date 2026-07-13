@@ -56,7 +56,7 @@ export default function RootLayout({
             <Suspense>
               <Navbar />
             </Suspense>
-            <main>{children}</main>
+            <main className="min-h-screen">{children}</main>
           </Providers>
         </ThemeProvider>
       </body>
