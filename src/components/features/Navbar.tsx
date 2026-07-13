@@ -13,7 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ThemeToggle } from "./ThemeToggle";
-import { LogOut, LayoutDashboard, Settings, Menu, X, Search } from "lucide-react";
+import { LogOut, LayoutDashboard, Settings, Menu, X, Search, FolderOpen } from "lucide-react";
 import { useUserStore } from "@/hooks/useUserStore";
 
 export function Navbar() {
@@ -124,6 +124,12 @@ export function Navbar() {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
+                  <Link href="/dashboard/moodboards-manager">
+                    <FolderOpen className="mr-2 h-4 w-4" />
+                    Moodboards
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
                   <Link href="/dashboard/settings">
                     <Settings className="mr-2 h-4 w-4" />
                     Settings
@@ -181,6 +187,13 @@ export function Navbar() {
                 onClick={() => setMobileOpen(false)}
               >
                 Dashboard
+              </Link>
+              <Link
+                href="/dashboard/moodboards-manager"
+                className="rounded-lg px-3 py-2 text-sm hover:bg-accent"
+                onClick={() => setMobileOpen(false)}
+              >
+                Moodboards
               </Link>
               <button
                 className="rounded-lg px-3 py-2 text-left text-sm hover:bg-accent"

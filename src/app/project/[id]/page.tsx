@@ -221,13 +221,15 @@ export default function ProjectDetailPage() {
               )}
             </div>
             <div className="mt-3 flex items-center gap-3">
-              <Avatar className="h-8 w-8">
-                <AvatarImage src={author.avatarUrl} alt={author.username} />
-                <AvatarFallback className="text-xs">
-                  {author.username?.slice(0, 2).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              <span className="text-sm font-medium">{author.username}</span>
+              <Link href={`/profile/${author.username}`} className="flex items-center gap-3">
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src={author.avatarUrl} alt={author.username} />
+                  <AvatarFallback className="text-xs">
+                    {author.username?.slice(0, 2).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <span className="text-sm font-medium hover:underline">{author.username}</span>
+              </Link>
             </div>
           </div>
 

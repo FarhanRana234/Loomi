@@ -18,6 +18,28 @@ async function getAuthUid(): Promise<string | null> {
 
 export async function GET(request: NextRequest) {
   try {
+    const searchParams = request.nextUrl.searchParams;
+    const userId = searchParams.get("userId");
+    const publicOnly = searchParams.get("publicOnly") === "true";
+    const projectId = searchParams.get("projectId");
+
+    await connectToDatabase();
+
+    if (userId) {
+      // External fetch (profile view) — filter by visibility
+      const query: Record<string, unknown> = { userId };
+      if (publicOnly) query.visibility = "public";
+      if (projectId) query.projects = projectId;
+
+      const moodboards = await Moodboard.find(query)
+        .populate("projects", "title mediaUrl userId likes")
+        .sort({ updatedAt: -1 })
+        .lean();
+
+      return NextResponse.json({ success: true, data: moodboards });
+    }
+
+    // Authenticated fetch (own moodboards) — show all
     const uid = await getAuthUid();
     if (!uid) {
       return NextResponse.json(
@@ -25,11 +47,6 @@ export async function GET(request: NextRequest) {
         { status: 401 }
       );
     }
-
-    await connectToDatabase();
-
-    const searchParams = request.nextUrl.searchParams;
-    const projectId = searchParams.get("projectId");
 
     const query: Record<string, unknown> = { userId: uid };
     if (projectId) query.projects = projectId;
@@ -62,7 +79,7 @@ export async function POST(request: NextRequest) {
     await connectToDatabase();
 
     const body = await request.json();
-    const { name, isPublic } = body;
+    const { name, visibility } = body;
 
     if (!name) {
       return NextResponse.json(
@@ -74,7 +91,7 @@ export async function POST(request: NextRequest) {
     const moodboard = await Moodboard.create({
       name,
       userId: uid,
-      isPublic: isPublic !== undefined ? !!isPublic : true,
+      visibility: visibility === "private" ? "private" : "public",
     });
 
     return NextResponse.json({ success: true, data: moodboard }, { status: 201 });

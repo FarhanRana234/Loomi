@@ -67,7 +67,13 @@ export function ProjectCard({ project }: ProjectCardProps) {
               {project.title}
             </h3>
             <p className="mt-1 text-xs text-white/70">
-              {(project.userId as unknown as { username: string })?.username || "Creator"}
+              <Link
+                href={`/profile/${(project.userId as unknown as { username: string })?.username}`}
+                className="hover:underline"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {(project.userId as unknown as { username: string })?.username || "Creator"}
+              </Link>
             </p>
           </div>
         </div>

@@ -25,7 +25,7 @@ export default async function ProfilePage({ params }: PageParams) {
     Project.find({ userId: profileOwner._id, status: "published" })
       .sort({ createdAt: -1 })
       .lean(),
-    Moodboard.find({ userId: profileOwner.firebaseId })
+    Moodboard.find({ userId: profileOwner.firebaseId, visibility: "public" })
       .populate("projects", "title mediaUrl userId likes")
       .lean(),
   ]);
@@ -43,9 +43,7 @@ export default async function ProfilePage({ params }: PageParams) {
   }
 
   const isSelf = viewerUid === profileOwner.firebaseId;
-  const visibleMoodboards = isSelf
-    ? allMoodboards
-    : allMoodboards.filter((m) => m.isPublic === true);
+  const visibleMoodboards = allMoodboards;
 
   const serializedUser = {
     _id: String(profileOwner._id),
@@ -70,7 +68,7 @@ export default async function ProfilePage({ params }: PageParams) {
   const serializedMoodboards = (visibleMoodboards as any[]).map((m) => ({
     _id: String(m._id),
     name: m.name as string,
-    isPublic: m.isPublic as boolean,
+    visibility: (m.visibility as string) || "public",
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     projects: ((m.projects || []) as any[]).map((p) => ({
       _id: String(p._id),

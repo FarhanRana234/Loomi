@@ -28,7 +28,7 @@ interface ProjectThumb {
 interface MoodboardCard {
   _id: string;
   name: string;
-  isPublic: boolean;
+  visibility: string;
   projects: { _id: string; title: string; mediaUrl: string }[];
 }
 
@@ -191,7 +191,7 @@ export default function ProfileClient({
                 >
                   <div className="flex items-center justify-between">
                     <h3 className="font-medium">{mb.name}</h3>
-                    {!mb.isPublic && (
+                    {mb.visibility === "private" && (
                       <Badge variant="outline" className="gap-1 text-[10px]">
                         <Lock className="h-3 w-3" />
                         Private

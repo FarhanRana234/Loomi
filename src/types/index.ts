@@ -34,7 +34,7 @@ export interface IMoodboard {
   name: string;
   userId: string;
   projects: IProject[];
-  isPublic: boolean;
+  visibility: "public" | "private";
   createdAt: Date;
   updatedAt: Date;
 }

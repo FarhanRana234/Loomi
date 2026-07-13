@@ -41,7 +41,7 @@ export async function PATCH(
     }
 
     const body = await request.json();
-    const { action, projectId, name, isPublic } = body;
+    const { action, projectId, name, visibility } = body;
 
     if (action === "add" && projectId) {
       if (!moodboard.projects.includes(projectId)) {
@@ -51,9 +51,13 @@ export async function PATCH(
       moodboard.projects = moodboard.projects.filter(
         (p: { toString(): string }) => p.toString() !== projectId
       );
-    } else if (name !== undefined || isPublic !== undefined) {
+    } else {
       if (name !== undefined) moodboard.name = name;
-      if (isPublic !== undefined) moodboard.isPublic = isPublic;
+      if (visibility !== undefined) {
+        if (["public", "private"].includes(visibility)) {
+          moodboard.visibility = visibility;
+        }
+      }
     }
 
     await moodboard.save();
