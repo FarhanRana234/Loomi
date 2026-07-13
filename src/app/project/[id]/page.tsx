@@ -3,20 +3,20 @@
 import { useEffect, useState, useTransition } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { Heart, Share2, ArrowLeft } from "lucide-react";
+import { Heart, Share2, ArrowLeft, BookmarkPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { useAuth } from "@/lib/auth-context";
+import { useAuthStore } from "@/lib/store";
 import { ProjectCard } from "@/components/features/ProjectCard";
 import type { IProject } from "@/types";
 
 export default function ProjectDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const { user } = useAuth();
+  const user = useAuthStore((s) => s.user);
   const [project, setProject] = useState<IProject | null>(null);
   const [related, setRelated] = useState<IProject[]>([]);
   const [loading, setLoading] = useState(true);
@@ -32,7 +32,7 @@ export default function ProjectDetailPage() {
           setProject(d.data);
           setLikeCount(d.data.likes.length);
           if (user) {
-            setLiked(d.data.likes.includes(user.uid));
+            setLiked(d.data.likes.includes(user.firebaseId));
           }
         }
         setLoading(false);
@@ -117,6 +117,11 @@ export default function ProjectDetailPage() {
     avatarUrl: string;
   };
 
+  const isOwner = user && (project.userId as unknown as { firebaseId: string })?.firebaseId === user.firebaseId;
+  const protectedUrl = (project as unknown as { protected?: boolean }).protected && project.mediaUrl
+    ? project.mediaUrl.replace("/upload/", "/upload/l_text:Arial_40:${author.username}_©_Loomi,o_30/")
+    : project.mediaUrl;
+
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
       <Link
@@ -128,9 +133,8 @@ export default function ProjectDetailPage() {
       </Link>
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-5">
-        {/* Hero Image */}
         <div className="lg:col-span-3">
-          {project.mediaUrl.includes(".mp4") || project.mediaUrl.includes("video") ? (
+          {(project.mediaUrl.includes(".mp4") || project.mediaUrl.includes("video")) ? (
             <video
               src={project.mediaUrl}
               controls
@@ -138,19 +142,24 @@ export default function ProjectDetailPage() {
             />
           ) : (
             <img
-              src={project.mediaUrl}
+              src={protectedUrl}
               alt={project.title}
               className="w-full rounded-xl object-cover"
+              onContextMenu={(e) => (project as unknown as { protected?: boolean }).protected && e.preventDefault()}
             />
           )}
         </div>
 
-        {/* Details Sidebar */}
         <div className="space-y-6 lg:col-span-2">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">
-              {project.title}
-            </h1>
+            <div className="flex items-start justify-between gap-2">
+              <h1 className="text-2xl font-bold tracking-tight">
+                {project.title}
+              </h1>
+              {(project as unknown as { protected?: boolean }).protected && (
+                <Badge variant="outline" className="shrink-0 text-[10px]">Protected</Badge>
+              )}
+            </div>
             <div className="mt-3 flex items-center gap-3">
               <Avatar className="h-8 w-8">
                 <AvatarImage src={author.avatarUrl} alt={author.username} />
@@ -194,6 +203,15 @@ export default function ProjectDetailPage() {
               <Share2 className="mr-2 h-4 w-4" />
               Share
             </Button>
+            {user && !isOwner && (
+              <Button
+                variant="outline"
+                onClick={() => router.push(`/dashboard/moodboards?add=${project._id}`)}
+              >
+                <BookmarkPlus className="mr-2 h-4 w-4" />
+                Save
+              </Button>
+            )}
           </div>
 
           <div className="rounded-xl border border-border p-4">
@@ -212,13 +230,12 @@ export default function ProjectDetailPage() {
         </div>
       </div>
 
-      {/* More Like This */}
       {related.length > 0 && (
         <div className="mt-16">
           <h2 className="text-xl font-bold tracking-tight">You may also like</h2>
           <div className="mt-6 columns-1 gap-4 sm:columns-2 lg:columns-3 xl:columns-4">
             {related.map((p) => (
-              <ProjectCard key={p._id} project={p} currentUserId={user?.uid} />
+              <ProjectCard key={p._id} project={p} currentUserId={user?.firebaseId} />
             ))}
           </div>
         </div>

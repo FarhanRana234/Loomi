@@ -10,6 +10,7 @@ export interface IProjectDocument extends Document {
   likes: string[];
   views: number;
   status: "draft" | "published" | "flagged";
+  protected: boolean;
 }
 
 const ProjectSchema = new Schema<IProjectDocument>(
@@ -27,6 +28,7 @@ const ProjectSchema = new Schema<IProjectDocument>(
       enum: ["draft", "published", "flagged"],
       default: "published",
     },
+    protected: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

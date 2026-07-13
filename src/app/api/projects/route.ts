@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { title, description, tags, cloudinaryPublicId, mediaUrl } = body;
+    const { title, description, tags, cloudinaryPublicId, mediaUrl, protected: isProtected } = body;
 
     if (!title || !cloudinaryPublicId || !mediaUrl) {
       return NextResponse.json(
@@ -82,6 +82,7 @@ export async function POST(request: NextRequest) {
       cloudinaryPublicId,
       mediaUrl,
       userId: user._id,
+      protected: !!isProtected,
     });
 
     return NextResponse.json({ success: true, data: project }, { status: 201 });

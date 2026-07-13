@@ -16,7 +16,7 @@ export async function verifyRequest(request: NextRequest) {
   const token = await extractToken(request);
   if (!token) return null;
   try {
-    return await getAdminAuth().verifyIdToken(token);
+    return await getAdminAuth().verifySessionCookie(token);
   } catch {
     return null;
   }

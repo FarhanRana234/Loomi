@@ -6,10 +6,10 @@ import { getAdminAuth } from "@/lib/firebase-admin";
 
 async function getAuthUser() {
   const cookieStore = await cookies();
-  const token = cookieStore.get("__session")?.value;
-  if (!token) return null;
+  const sessionCookie = cookieStore.get("__session")?.value;
+  if (!sessionCookie) return null;
   try {
-    const decoded = await getAdminAuth().verifyIdToken(token);
+    const decoded = await getAdminAuth().verifySessionCookie(sessionCookie);
     await connectToDatabase();
     return await User.findOne({ firebaseId: decoded.uid }).select("-__v");
   } catch {
@@ -46,7 +46,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { username, bio, avatarUrl } = body;
+    const { username, bio, avatarUrl, socialLinks } = body;
 
     if (username && username !== user.username) {
       const existing = await User.findOne({ username, _id: { $ne: user._id } });
@@ -61,6 +61,7 @@ export async function PATCH(request: NextRequest) {
 
     if (bio !== undefined) user.bio = bio;
     if (avatarUrl !== undefined) user.avatarUrl = avatarUrl;
+    if (socialLinks !== undefined) user.socialLinks = socialLinks;
 
     await user.save();
 

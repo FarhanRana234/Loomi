@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useRef, useCallback } from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,30 +14,17 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ThemeToggle } from "./ThemeToggle";
 import { LogOut, LayoutDashboard, Settings, Menu, X, Search } from "lucide-react";
-
-interface NavbarUser {
-  username: string;
-  avatarUrl: string;
-  role: string;
-}
+import { useAuthStore } from "@/lib/store";
 
 export function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [user, setUser] = useState<NavbarUser | null>(null);
+  const user = useAuthStore((s) => s.user);
+  const logout = useAuthStore((s) => s.logout);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchValue, setSearchValue] = useState(searchParams.get("q") || "");
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    fetch("/api/auth/me")
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => {
-        if (d?.success && d.data) setUser(d.data);
-      })
-      .catch(() => {});
-  }, []);
 
   const pushSearch = useCallback(
     (value: string) => {
@@ -77,12 +64,10 @@ export function Navbar() {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-background/80 backdrop-blur-md">
       <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        {/* Logo */}
         <Link href="/" className="flex items-center gap-2">
           <span className="text-lg font-semibold tracking-tight">Loomi</span>
         </Link>
 
-        {/* Center: Search (hidden on mobile) */}
         <div className="hidden flex-1 justify-center md:flex mx-4 max-w-sm">
           <div className="relative w-full">
             <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
@@ -99,7 +84,6 @@ export function Navbar() {
           </div>
         </div>
 
-        {/* Right: Auth + Theme */}
         <div className="flex items-center gap-2">
           <ThemeToggle />
 
@@ -137,14 +121,7 @@ export function Navbar() {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={() => {
-                    fetch("/api/auth/logout", { method: "POST" }).then(() => {
-                      sessionStorage.clear();
-                      window.location.href = "/login";
-                    });
-                  }}
-                >
+                <DropdownMenuItem onClick={() => logout()}>
                   <LogOut className="mr-2 h-4 w-4" />
                   Log out
                 </DropdownMenuItem>
@@ -161,7 +138,6 @@ export function Navbar() {
             </div>
           )}
 
-          {/* Mobile menu button */}
           <Button
             variant="ghost"
             size="icon"
@@ -173,7 +149,6 @@ export function Navbar() {
         </div>
       </div>
 
-      {/* Mobile menu */}
       {mobileOpen && (
         <div className="border-t border-border px-4 py-3 md:hidden">
           <div className="relative mb-3">
@@ -200,12 +175,7 @@ export function Navbar() {
               </Link>
               <button
                 className="rounded-lg px-3 py-2 text-left text-sm hover:bg-accent"
-                onClick={() => {
-                  fetch("/api/auth/logout", { method: "POST" }).then(() => {
-                    sessionStorage.clear();
-                    window.location.href = "/login";
-                  });
-                }}
+                onClick={() => logout()}
               >
                 Log out
               </button>

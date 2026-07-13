@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
 import { getAdminAuth } from "@/lib/firebase-admin";
 import { setSessionCookie, clearSessionCookie } from "@/lib/session";
 
@@ -17,10 +16,10 @@ export async function POST(request: NextRequest) {
       return response;
     }
 
-    const decoded = await getAdminAuth().verifyIdToken(idToken);
+    await getAdminAuth().verifyIdToken(idToken);
 
-    const response = NextResponse.json({ success: true, uid: decoded.uid });
-    setSessionCookie(response, idToken);
+    const response = NextResponse.json({ success: true });
+    await setSessionCookie(response, idToken);
     return response;
   } catch {
     const response = NextResponse.json(

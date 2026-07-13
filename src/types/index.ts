@@ -6,6 +6,7 @@ export interface IUser {
   role: "user" | "admin";
   bio: string;
   avatarUrl: string;
+  socialLinks: { label: string; url: string }[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -21,6 +22,18 @@ export interface IProject {
   likes: string[];
   views: number;
   status: "draft" | "published" | "flagged";
+  protected: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface IMoodboard {
+  _id: string;
+  name: string;
+  description: string;
+  userId: string;
+  projectIds: IProject[];
+  isPublic: boolean;
   createdAt: Date;
   updatedAt: Date;
 }

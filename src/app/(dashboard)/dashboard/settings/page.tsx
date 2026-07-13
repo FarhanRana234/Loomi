@@ -5,22 +5,21 @@ import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Camera, X } from "lucide-react";
+import { Camera, X, Plus, ExternalLink } from "lucide-react";
+import { useAuthStore } from "@/lib/store";
 
-interface UserData {
-  _id: string;
-  username: string;
-  email: string;
-  avatarUrl: string;
-  bio: string;
-  role: string;
+interface SocialLink {
+  label: string;
+  url: string;
 }
 
 export default function SettingsPage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [user, setUser] = useState<UserData | null>(null);
+  const storeUser = useAuthStore((s) => s.user);
+  const setUser = useAuthStore((s) => s.setUser);
   const [username, setUsername] = useState("");
   const [bio, setBio] = useState("");
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
@@ -30,23 +29,33 @@ export default function SettingsPage() {
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
+  const [newLinkLabel, setNewLinkLabel] = useState("");
+  const [newLinkUrl, setNewLinkUrl] = useState("");
 
   useEffect(() => {
-    fetch("/api/auth/me")
-      .then((r) => {
-        if (!r.ok) throw new Error("Not authenticated");
-        return r.json();
-      })
-      .then((d) => {
-        if (d.success && d.data) {
-          setUser(d.data);
-          setUsername(d.data.username);
-          setBio(d.data.bio || "");
-        }
-      })
-      .catch(() => router.push("/login"))
-      .finally(() => setLoading(false));
-  }, [router]);
+    if (storeUser) {
+      setUsername(storeUser.username);
+      setBio(storeUser.bio || "");
+      setSocialLinks(storeUser.socialLinks || []);
+      setLoading(false);
+    } else {
+      fetch("/api/auth/me")
+        .then((r) => {
+          if (!r.ok) throw new Error("Not authenticated");
+          return r.json();
+        })
+        .then((d) => {
+          if (d.success && d.data) {
+            setUsername(d.data.username);
+            setBio(d.data.bio || "");
+            setSocialLinks(d.data.socialLinks || []);
+          }
+        })
+        .catch(() => router.push("/login"))
+        .finally(() => setLoading(false));
+    }
+  }, [storeUser, router]);
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -66,6 +75,17 @@ export default function SettingsPage() {
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
+  const addSocialLink = () => {
+    if (!newLinkLabel.trim() || !newLinkUrl.trim()) return;
+    setSocialLinks([...socialLinks, { label: newLinkLabel.trim(), url: newLinkUrl.trim() }]);
+    setNewLinkLabel("");
+    setNewLinkUrl("");
+  };
+
+  const removeSocialLink = (index: number) => {
+    setSocialLinks(socialLinks.filter((_, i) => i !== index));
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
@@ -73,7 +93,7 @@ export default function SettingsPage() {
     setSuccess("");
 
     try {
-      let finalAvatarUrl = user?.avatarUrl || "";
+      let finalAvatarUrl = storeUser?.avatarUrl || "";
 
       if (avatarFile) {
         setUploadingAvatar(true);
@@ -107,14 +127,16 @@ export default function SettingsPage() {
           username,
           bio,
           avatarUrl: finalAvatarUrl,
+          socialLinks,
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to update");
 
-      setUser((prev) =>
-        prev ? { ...prev, username, bio, avatarUrl: finalAvatarUrl } : prev
-      );
+      if (data.data) {
+        setUser(data.data);
+      }
+
       setSuccess("Profile updated");
       clearAvatar();
     } catch (err: unknown) {
@@ -124,14 +146,15 @@ export default function SettingsPage() {
     setSaving(false);
   };
 
-  const initials = user?.username
-    ? user.username.slice(0, 2).toUpperCase()
+  const initials = storeUser?.username
+    ? storeUser.username.slice(0, 2).toUpperCase()
     : "??";
 
   const hasChanges =
-    username !== (user?.username || "") ||
-    bio !== (user?.bio || "") ||
-    avatarFile !== null;
+    username !== (storeUser?.username || "") ||
+    bio !== (storeUser?.bio || "") ||
+    avatarFile !== null ||
+    JSON.stringify(socialLinks) !== JSON.stringify(storeUser?.socialLinks || []);
 
   if (loading) {
     return (
@@ -152,7 +175,6 @@ export default function SettingsPage() {
       </p>
 
       <form onSubmit={handleSave} className="mt-8 space-y-6">
-        {/* Avatar */}
         <Card>
           <CardHeader>
             <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -164,7 +186,7 @@ export default function SettingsPage() {
               <div className="relative">
                 <Avatar className="h-20 w-20">
                   <AvatarImage
-                    src={avatarPreview || user?.avatarUrl}
+                    src={avatarPreview || storeUser?.avatarUrl}
                     alt="avatar"
                   />
                   <AvatarFallback className="text-lg">{initials}</AvatarFallback>
@@ -206,7 +228,6 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
-        {/* Profile Info */}
         <Card>
           <CardHeader>
             <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -216,7 +237,7 @@ export default function SettingsPage() {
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <label className="text-sm font-medium">Email</label>
-              <Input value={user?.email || ""} disabled className="opacity-60" />
+              <Input value={storeUser?.email || ""} disabled className="opacity-60" />
               <p className="text-xs text-muted-foreground">
                 Email cannot be changed
               </p>
@@ -251,8 +272,58 @@ export default function SettingsPage() {
 
             <div className="space-y-2">
               <label className="text-sm font-medium">Role</label>
-              <Input value={user?.role || ""} disabled className="opacity-60" />
+              <Input value={storeUser?.role || ""} disabled className="opacity-60" />
             </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Social Links
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {socialLinks.map((link, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <Badge variant="outline" className="shrink-0">
+                  {link.label}
+                </Badge>
+                <span className="flex-1 truncate text-xs text-muted-foreground">
+                  {link.url}
+                </span>
+                <a href={link.url} target="_blank" rel="noopener noreferrer">
+                  <ExternalLink className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground" />
+                </a>
+                <button
+                  type="button"
+                  onClick={() => removeSocialLink(i)}
+                  className="text-muted-foreground hover:text-destructive"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            ))}
+            <div className="flex gap-2">
+              <Input
+                value={newLinkLabel}
+                onChange={(e) => setNewLinkLabel(e.target.value)}
+                placeholder="Label (e.g. Twitter)"
+                className="w-1/3"
+              />
+              <Input
+                value={newLinkUrl}
+                onChange={(e) => setNewLinkUrl(e.target.value)}
+                placeholder="https://..."
+                className="flex-1"
+              />
+              <Button type="button" variant="outline" size="icon" onClick={addSocialLink}>
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Add links to your social profiles or portfolio
+            </p>
           </CardContent>
         </Card>
 

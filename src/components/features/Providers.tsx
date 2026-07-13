@@ -1,7 +1,14 @@
 "use client";
 
-import { AuthProvider } from "@/lib/auth-context";
+import { useEffect } from "react";
+import { useAuthStore } from "@/lib/store";
 
 export function Providers({ children }: { children: React.ReactNode }) {
-  return <AuthProvider>{children}</AuthProvider>;
+  const fetchUser = useAuthStore((s) => s.fetchUser);
+
+  useEffect(() => {
+    fetchUser();
+  }, [fetchUser]);
+
+  return <>{children}</>;
 }

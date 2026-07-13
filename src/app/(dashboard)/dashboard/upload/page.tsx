@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
-import { X } from "lucide-react";
+import { X, Shield, ShieldCheck } from "lucide-react";
 
 export default function UploadPage() {
   const router = useRouter();
@@ -13,6 +13,7 @@ export default function UploadPage() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [tags, setTags] = useState("");
+  const [isProtected, setIsProtected] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState("");
@@ -65,10 +66,10 @@ export default function UploadPage() {
       const formData = new FormData();
       formData.append("file", selectedFile);
       formData.append("upload_preset", uploadPreset);
+      formData.append("resource_type", "auto");
 
-      const resourceType = selectedFile.type.startsWith("video/") ? "video" : "image";
       const uploadRes = await fetch(
-        `https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`,
+        `https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`,
         { method: "POST", body: formData }
       );
 
@@ -91,6 +92,7 @@ export default function UploadPage() {
             .filter(Boolean),
           cloudinaryPublicId: uploadData.public_id,
           mediaUrl: uploadData.secure_url,
+          protected: isProtected,
         }),
       });
 
@@ -120,7 +122,6 @@ export default function UploadPage() {
               </div>
             )}
 
-            {/* Upload Zone / Preview */}
             {preview && previewType === "image" ? (
               <div className="relative overflow-hidden rounded-xl border border-border">
                 <img
@@ -224,6 +225,39 @@ export default function UploadPage() {
               />
               <p className="text-xs text-muted-foreground">Comma-separated</p>
             </div>
+
+            <button
+              type="button"
+              onClick={() => setIsProtected(!isProtected)}
+              className={`flex w-full items-center gap-3 rounded-xl border p-4 text-left transition-colors ${
+                isProtected
+                  ? "border-blue-500/50 bg-blue-500/5"
+                  : "border-border hover:border-foreground/20"
+              }`}
+            >
+              {isProtected ? (
+                <ShieldCheck className="h-5 w-5 shrink-0 text-blue-500" />
+              ) : (
+                <Shield className="h-5 w-5 shrink-0 text-muted-foreground" />
+              )}
+              <div className="flex-1">
+                <p className="text-sm font-medium">Protect Asset</p>
+                <p className="text-xs text-muted-foreground">
+                  Disables right-click and adds a watermark to your image
+                </p>
+              </div>
+              <div
+                className={`h-5 w-9 shrink-0 rounded-full p-0.5 transition-colors ${
+                  isProtected ? "bg-blue-500" : "bg-muted"
+                }`}
+              >
+                <div
+                  className={`h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${
+                    isProtected ? "translate-x-4" : "translate-x-0"
+                  }`}
+                />
+              </div>
+            </button>
 
             <Button
               type="submit"

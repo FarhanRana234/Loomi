@@ -7,6 +7,7 @@ export interface IUserDocument extends Document {
   role: "user" | "admin";
   bio: string;
   avatarUrl: string;
+  socialLinks: { label: string; url: string }[];
 }
 
 const UserSchema = new Schema<IUserDocument>(
@@ -38,6 +39,15 @@ const UserSchema = new Schema<IUserDocument>(
     avatarUrl: {
       type: String,
       default: "",
+    },
+    socialLinks: {
+      type: [
+        {
+          label: { type: String, required: true },
+          url: { type: String, required: true },
+        },
+      ],
+      default: [],
     },
   },
   { timestamps: true }

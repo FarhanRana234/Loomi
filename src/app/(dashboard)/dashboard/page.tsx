@@ -4,35 +4,30 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Eye, Heart, FolderOpen, Plus } from "lucide-react";
+import { Eye, Heart, FolderOpen, Plus, Bookmark } from "lucide-react";
 import { AnalyticsChart } from "@/components/features/AnalyticsChart";
+import { useAuthStore } from "@/lib/store";
 import type { IProject, IUser } from "@/types";
 
 export default function DashboardPage() {
-  const [user, setUser] = useState<IUser | null>(null);
+  const storeUser = useAuthStore((s) => s.user);
   const [projects, setProjects] = useState<IProject[]>([]);
   const [stats, setStats] = useState({ views: 0, likes: 0, count: 0 });
 
   useEffect(() => {
-    fetch("/api/auth/me")
+    if (!storeUser) return;
+    fetch(`/api/projects?userId=${storeUser._id}&limit=100`)
       .then((r) => r.json())
-      .then((d) => {
-        if (d.success) {
-          setUser(d.data);
-          fetch(`/api/projects?userId=${d.data._id}&limit=100`)
-            .then((r) => r.json())
-            .then((p) => {
-              const items = p.data?.items || [];
-              setProjects(items);
-              setStats({
-                views: items.reduce((a: number, i: IProject) => a + i.views, 0),
-                likes: items.reduce((a: number, i: IProject) => a + i.likes.length, 0),
-                count: items.length,
-              });
-            });
-        }
+      .then((p) => {
+        const items = p.data?.items || [];
+        setProjects(items);
+        setStats({
+          views: items.reduce((a: number, i: IProject) => a + i.views, 0),
+          likes: items.reduce((a: number, i: IProject) => a + i.likes.length, 0),
+          count: items.length,
+        });
       });
-  }, []);
+  }, [storeUser]);
 
   const chartData = projects.slice(0, 7).map((p) => ({
     name: p.title.slice(0, 8),
@@ -45,18 +40,26 @@ export default function DashboardPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">
-            Welcome back, {user?.username || "..."}
+            Welcome back, {storeUser?.username || "..."}
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Manage your creative portfolio
           </p>
         </div>
-        <Button asChild>
-          <Link href="/dashboard/upload">
-            <Plus className="mr-2 h-4 w-4" />
-            New Project
-          </Link>
-        </Button>
+        <div className="flex gap-2">
+          <Button asChild variant="outline">
+            <Link href="/dashboard/moodboards">
+              <Bookmark className="mr-2 h-4 w-4" />
+              Moodboards
+            </Link>
+          </Button>
+          <Button asChild>
+            <Link href="/dashboard/upload">
+              <Plus className="mr-2 h-4 w-4" />
+              New Project
+            </Link>
+          </Button>
+        </div>
       </div>
 
       {/* Metrics */}
