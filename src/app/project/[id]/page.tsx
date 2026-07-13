@@ -198,7 +198,7 @@ export default function ProjectDetailPage() {
             />
           ) : (
             <img
-              src={(project as unknown as { signedImageUrl?: string }).signedImageUrl || protectedUrl}
+              src={protectedUrl}
               alt={project.title}
               className="w-full rounded-xl object-cover"
               onContextMenu={(e) => isProtected && e.preventDefault()}

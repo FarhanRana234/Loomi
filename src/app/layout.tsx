@@ -22,6 +22,10 @@ export const metadata: Metadata = {
   title: "Loomi — Creative Portfolio & Community",
   description:
     "A minimalist, high-performance visual portfolio and community platform for creators.",
+  icons: {
+    icon: "/favicon.svg",
+    apple: "/favicon.svg",
+  },
 };
 
 export const viewport: Viewport = {
