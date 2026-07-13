@@ -32,7 +32,6 @@ interface Moodboard {
 
 export default function MoodboardsManagerPage() {
   const [moodboards, setMoodboards] = useState<Moodboard[]>([]);
-  const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -48,7 +47,6 @@ export default function MoodboardsManagerPage() {
     } catch {
       // silent
     }
-    setLoading(false);
   }, []);
 
   useEffect(() => {
@@ -159,14 +157,6 @@ export default function MoodboardsManagerPage() {
       toast.error("Failed to remove project");
     }
   };
-
-  if (loading) {
-    return (
-      <div className="mx-auto max-w-5xl px-4 py-16 text-center">
-        <Loader2 className="mx-auto h-6 w-6 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
