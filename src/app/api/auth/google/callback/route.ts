@@ -5,6 +5,7 @@ import User from "@/models/User";
 
 const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET!;
+const FIREBASE_API_KEY = process.env.NEXT_PUBLIC_FIREBASE_API_KEY!;
 
 export async function GET(request: NextRequest) {
   try {
@@ -29,20 +30,44 @@ export async function GET(request: NextRequest) {
     });
 
     if (!tokenRes.ok) {
-      console.error("Google token exchange failed:", await tokenRes.text());
+      const errText = await tokenRes.text();
+      console.error("Google token exchange failed:", errText);
       return NextResponse.redirect(new URL("/login?error=google_token_exchange", siteUrl));
     }
 
-    const { id_token } = await tokenRes.json();
+    const { id_token: googleIdToken } = await tokenRes.json();
 
-    const decoded = await getAdminAuth().verifyIdToken(id_token);
+    const firebaseRes = await fetch(
+      `https://identitytoolkit.googleapis.com/v1/accounts:signInWithIdp?key=${FIREBASE_API_KEY}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          requestUri: `${origin}/api/auth/google/callback`,
+          postBody: `id_token=${googleIdToken}&providerId=google.com`,
+          returnIdpCredential: "true",
+          returnSecureToken: "true",
+        }),
+      }
+    );
+
+    if (!firebaseRes.ok) {
+      const errText = await firebaseRes.text();
+      console.error("Firebase signInWithIdp failed:", errText);
+      return NextResponse.redirect(new URL("/login?error=google_firebase_auth", siteUrl));
+    }
+
+    const firebaseData = await firebaseRes.json();
+    const { idToken: firebaseIdToken } = firebaseData;
+
+    const decoded = await getAdminAuth().verifyIdToken(firebaseIdToken);
 
     await connectToDatabase();
 
     let user = await User.findOne({ firebaseId: decoded.uid });
 
     if (!user) {
-      const email = decoded.email || "";
+      const email = decoded.email || firebaseData.email || "";
       const username =
         decoded.name?.replace(/\s+/g, "").toLowerCase() ||
         email.split("@")[0];
@@ -73,7 +98,7 @@ export async function GET(request: NextRequest) {
     }
 
     const response = NextResponse.redirect(new URL("/dashboard", siteUrl));
-    response.cookies.set("__session", id_token, {
+    response.cookies.set("__session", firebaseIdToken, {
       httpOnly: false,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
