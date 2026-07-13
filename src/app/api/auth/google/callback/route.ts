@@ -5,13 +5,15 @@ import User from "@/models/User";
 
 const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET!;
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://loomi-737dd.vercel.app";
 
 export async function GET(request: NextRequest) {
   try {
+    const origin = request.headers.get("origin") || new URL(request.url).origin;
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || origin;
+
     const code = request.nextUrl.searchParams.get("code");
     if (!code) {
-      return NextResponse.redirect(new URL("/login?error=google_no_code", SITE_URL));
+      return NextResponse.redirect(new URL("/login?error=google_no_code", siteUrl));
     }
 
     const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
@@ -21,14 +23,14 @@ export async function GET(request: NextRequest) {
         code,
         client_id: GOOGLE_CLIENT_ID,
         client_secret: GOOGLE_CLIENT_SECRET,
-        redirect_uri: `${SITE_URL}/api/auth/google/callback`,
+        redirect_uri: `${origin}/api/auth/google/callback`,
         grant_type: "authorization_code",
       }),
     });
 
     if (!tokenRes.ok) {
       console.error("Google token exchange failed:", await tokenRes.text());
-      return NextResponse.redirect(new URL("/login?error=google_token_exchange", SITE_URL));
+      return NextResponse.redirect(new URL("/login?error=google_token_exchange", siteUrl));
     }
 
     const { id_token } = await tokenRes.json();
@@ -62,7 +64,7 @@ export async function GET(request: NextRequest) {
           html: `<!DOCTYPE html><html><body style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:40px 20px;">
             <h1 style="font-size:24px;font-weight:700;">Welcome to Loomi</h1>
             <p style="color:#666;line-height:1.6;">Hey ${username},<br/><br/>Thanks for joining Loomi! Your creative portfolio is ready. Start uploading your work and sharing it with the community.</p>
-            <a href="${SITE_URL}/dashboard" style="display:inline-block;background:#09090B;color:#FAFAFA;padding:12px 24px;border-radius:12px;text-decoration:none;font-weight:500;margin-top:16px;">Go to Dashboard</a>
+            <a href="${siteUrl}/dashboard" style="display:inline-block;background:#09090B;color:#FAFAFA;padding:12px 24px;border-radius:12px;text-decoration:none;font-weight:500;margin-top:16px;">Go to Dashboard</a>
           </body></html>`,
         });
       } catch {
@@ -70,7 +72,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const response = NextResponse.redirect(new URL("/dashboard", SITE_URL));
+    const response = NextResponse.redirect(new URL("/dashboard", siteUrl));
     response.cookies.set("__session", id_token, {
       httpOnly: false,
       secure: process.env.NODE_ENV === "production",
@@ -81,7 +83,8 @@ export async function GET(request: NextRequest) {
 
     return response;
   } catch (error) {
+    const origin = request.headers.get("origin") || new URL(request.url).origin;
     console.error("Google callback error:", error);
-    return NextResponse.redirect(new URL("/login?error=google_failed", SITE_URL));
+    return NextResponse.redirect(new URL("/login?error=google_failed", origin));
   }
 }
