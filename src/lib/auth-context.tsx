@@ -1,3 +1,3 @@
 "use client";
 
-export { useAuthStore as useAuth } from "./store";
+export { useUserStore as useAuth } from "@/hooks/useUserStore";

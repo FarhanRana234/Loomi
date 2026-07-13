@@ -14,14 +14,14 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ThemeToggle } from "./ThemeToggle";
 import { LogOut, LayoutDashboard, Settings, Menu, X, Search } from "lucide-react";
-import { useAuthStore } from "@/lib/store";
+import { useUserStore } from "@/hooks/useUserStore";
 
 export function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const user = useAuthStore((s) => s.user);
-  const logout = useAuthStore((s) => s.logout);
+  const user = useUserStore((s) => s.user);
+  const logout = useUserStore((s) => s.logout);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchValue, setSearchValue] = useState(searchParams.get("q") || "");
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);

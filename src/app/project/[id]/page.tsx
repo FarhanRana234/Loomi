@@ -4,19 +4,20 @@ import { useEffect, useState, useTransition } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Heart, Share2, ArrowLeft, BookmarkPlus } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { useAuthStore } from "@/lib/store";
+import { useUserStore } from "@/hooks/useUserStore";
 import { ProjectCard } from "@/components/features/ProjectCard";
 import type { IProject } from "@/types";
 
 export default function ProjectDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const user = useAuthStore((s) => s.user);
+  const user = useUserStore((s) => s.user);
   const [project, setProject] = useState<IProject | null>(null);
   const [related, setRelated] = useState<IProject[]>([]);
   const [loading, setLoading] = useState(true);
@@ -51,7 +52,7 @@ export default function ProjectDetailPage() {
 
   const handleLike = () => {
     if (!user) {
-      router.push("/login");
+      toast.error("Please log in to like projects");
       return;
     }
 
@@ -117,10 +118,19 @@ export default function ProjectDetailPage() {
     avatarUrl: string;
   };
 
-  const isOwner = user && (project.userId as unknown as { firebaseId: string })?.firebaseId === user.firebaseId;
-  const protectedUrl = (project as unknown as { protected?: boolean }).protected && project.mediaUrl
-    ? project.mediaUrl.replace("/upload/", "/upload/l_text:Arial_40:${author.username}_©_Loomi,o_30/")
-    : project.mediaUrl;
+  const isOwner =
+    user &&
+    (project.userId as unknown as { firebaseId: string })?.firebaseId ===
+      user.firebaseId;
+
+  const isProtected = (project as unknown as { protected?: boolean }).protected;
+  const protectedUrl =
+    isProtected && project.mediaUrl
+      ? project.mediaUrl.replace(
+          "/upload/",
+          `/upload/l_text:Arial_40:${author.username}_©_Loomi,o_30/`
+        )
+      : project.mediaUrl;
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
@@ -134,7 +144,8 @@ export default function ProjectDetailPage() {
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-5">
         <div className="lg:col-span-3">
-          {(project.mediaUrl.includes(".mp4") || project.mediaUrl.includes("video")) ? (
+          {project.mediaUrl.includes(".mp4") ||
+          project.mediaUrl.includes("video") ? (
             <video
               src={project.mediaUrl}
               controls
@@ -145,7 +156,7 @@ export default function ProjectDetailPage() {
               src={protectedUrl}
               alt={project.title}
               className="w-full rounded-xl object-cover"
-              onContextMenu={(e) => (project as unknown as { protected?: boolean }).protected && e.preventDefault()}
+              onContextMenu={(e) => isProtected && e.preventDefault()}
             />
           )}
         </div>
@@ -156,8 +167,13 @@ export default function ProjectDetailPage() {
               <h1 className="text-2xl font-bold tracking-tight">
                 {project.title}
               </h1>
-              {(project as unknown as { protected?: boolean }).protected && (
-                <Badge variant="outline" className="shrink-0 text-[10px]">Protected</Badge>
+              {isProtected && (
+                <Badge
+                  variant="outline"
+                  className="shrink-0 text-[10px]"
+                >
+                  Protected
+                </Badge>
               )}
             </div>
             <div className="mt-3 flex items-center gap-3">
@@ -206,7 +222,11 @@ export default function ProjectDetailPage() {
             {user && !isOwner && (
               <Button
                 variant="outline"
-                onClick={() => router.push(`/dashboard/moodboards?add=${project._id}`)}
+                onClick={() =>
+                  router.push(
+                    `/dashboard/moodboards?add=${project._id}`
+                  )
+                }
               >
                 <BookmarkPlus className="mr-2 h-4 w-4" />
                 Save
@@ -232,10 +252,12 @@ export default function ProjectDetailPage() {
 
       {related.length > 0 && (
         <div className="mt-16">
-          <h2 className="text-xl font-bold tracking-tight">You may also like</h2>
+          <h2 className="text-xl font-bold tracking-tight">
+            You may also like
+          </h2>
           <div className="mt-6 columns-1 gap-4 sm:columns-2 lg:columns-3 xl:columns-4">
             {related.map((p) => (
-              <ProjectCard key={p._id} project={p} currentUserId={user?.firebaseId} />
+              <ProjectCard key={p._id} project={p} />
             ))}
           </div>
         </div>

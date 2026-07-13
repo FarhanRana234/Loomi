@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Trash2, Eye, EyeOff, X } from "lucide-react";
-import { useAuthStore } from "@/lib/store";
+import { useUserStore } from "@/hooks/useUserStore";
 
 interface Moodboard {
   _id: string;
@@ -21,7 +21,7 @@ interface Moodboard {
 function MoodboardsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const user = useAuthStore((s) => s.user);
+  const user = useUserStore((s) => s.user);
   const [moodboards, setMoodboards] = useState<Moodboard[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);

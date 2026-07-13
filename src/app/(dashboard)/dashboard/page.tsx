@@ -6,11 +6,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Eye, Heart, FolderOpen, Plus, Bookmark } from "lucide-react";
 import { AnalyticsChart } from "@/components/features/AnalyticsChart";
-import { useAuthStore } from "@/lib/store";
+import { useUserStore } from "@/hooks/useUserStore";
 import type { IProject, IUser } from "@/types";
 
 export default function DashboardPage() {
-  const storeUser = useAuthStore((s) => s.user);
+  const storeUser = useUserStore((s) => s.user);
   const [projects, setProjects] = useState<IProject[]>([]);
   const [stats, setStats] = useState({ views: 0, likes: 0, count: 0 });
 

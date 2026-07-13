@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Camera, X, Plus, ExternalLink } from "lucide-react";
-import { useAuthStore } from "@/lib/store";
+import { useUserStore } from "@/hooks/useUserStore";
 
 interface SocialLink {
   label: string;
@@ -18,8 +18,8 @@ interface SocialLink {
 export default function SettingsPage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const storeUser = useAuthStore((s) => s.user);
-  const setUser = useAuthStore((s) => s.setUser);
+  const storeUser = useUserStore((s) => s.user);
+  const setUser = useUserStore((s) => s.setUser);
   const [username, setUsername] = useState("");
   const [bio, setBio] = useState("");
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);

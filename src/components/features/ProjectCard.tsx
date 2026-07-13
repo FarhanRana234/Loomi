@@ -2,21 +2,21 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { Heart } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useUserStore } from "@/hooks/useUserStore";
 import type { IProject } from "@/types";
 
 interface ProjectCardProps {
   project: IProject;
-  currentUserId?: string | null;
 }
 
-export function ProjectCard({ project, currentUserId }: ProjectCardProps) {
-  const router = useRouter();
+export function ProjectCard({ project }: ProjectCardProps) {
+  const user = useUserStore((s) => s.user);
   const [liked, setLiked] = useState(
-    currentUserId ? project.likes.includes(currentUserId) : false
+    user ? project.likes.includes(user.firebaseId) : false
   );
   const [likeCount, setLikeCount] = useState(project.likes.length);
   const [isPending, startTransition] = useTransition();
@@ -24,8 +24,8 @@ export function ProjectCard({ project, currentUserId }: ProjectCardProps) {
   const handleLike = (e: React.MouseEvent) => {
     e.preventDefault();
 
-    if (!currentUserId) {
-      router.push("/login");
+    if (!user) {
+      toast.error("Please log in to like projects");
       return;
     }
 
