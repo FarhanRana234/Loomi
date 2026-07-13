@@ -25,6 +25,7 @@ export async function middleware(request: NextRequest) {
     if (!sessionCookie) {
       const loginUrl = new URL("/login", request.url);
       loginUrl.searchParams.set("redirect", pathname);
+      loginUrl.searchParams.set("error", "unauthorized");
       return NextResponse.redirect(loginUrl);
     }
 
@@ -39,16 +40,16 @@ export async function middleware(request: NextRequest) {
       const user = await User.findOne({ firebaseId: decodedToken.uid });
 
       if (!user || user.role !== "admin") {
-        const response = NextResponse.redirect(new URL("/", request.url));
-        response.headers.set("X-Unauthorized", "true");
-        return response;
+        const redirectUrl = new URL("/login", request.url);
+        redirectUrl.searchParams.set("error", "unauthorized");
+        return NextResponse.redirect(redirectUrl);
       }
 
       return NextResponse.next();
     } catch {
-      const response = NextResponse.redirect(new URL("/", request.url));
-      response.headers.set("X-Unauthorized", "true");
-      return response;
+      const redirectUrl = new URL("/login", request.url);
+      redirectUrl.searchParams.set("error", "session_expired");
+      return NextResponse.redirect(redirectUrl);
     }
   }
 

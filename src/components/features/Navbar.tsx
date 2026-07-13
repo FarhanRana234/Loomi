@@ -107,9 +107,14 @@ export function Navbar() {
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <Button asChild variant="default" size="sm">
-              <Link href="/login">Sign In</Link>
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button asChild variant="ghost" size="sm">
+                <Link href="/login">Sign In</Link>
+              </Button>
+              <Button asChild variant="default" size="sm">
+                <Link href="/register">Get Started</Link>
+              </Button>
+            </div>
           )}
 
           {/* Mobile menu button */}
