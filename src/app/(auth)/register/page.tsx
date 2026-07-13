@@ -1,24 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-
-declare global {
-  interface Window {
-    google?: {
-      accounts: {
-        id: {
-          initialize: (config: Record<string, unknown>) => void;
-          renderButton: (element: HTMLElement, config: Record<string, unknown>) => void;
-          prompt: () => void;
-        };
-      };
-    };
-  }
-}
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -28,50 +14,17 @@ export default function RegisterPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleGoogleCredential = useCallback(
-    async (response: { credential?: string }) => {
-      if (!response.credential) return;
-      setLoading(true);
-      setError("");
-      try {
-        const res = await fetch("/api/auth/google", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ credential: response.credential }),
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || "Google sign-in failed");
-        router.push("/dashboard");
-        router.refresh();
-      } catch (err: unknown) {
-        setError(err instanceof Error ? err.message : "Google sign-in failed");
-        setLoading(false);
-      }
-    },
-    [router]
-  );
-
-  useEffect(() => {
-    const script = document.createElement("script");
-    script.src = "https://accounts.google.com/gsi/client";
-    script.async = true;
-    script.onload = () => {
-      if (window.google?.accounts?.id) {
-        window.google.accounts.id.initialize({
-          client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "",
-          callback: handleGoogleCredential,
-          use_fedcm_for_prompt: false,
-        });
-      }
-    };
-    document.body.appendChild(script);
-    return () => { document.body.removeChild(script); };
-  }, [handleGoogleCredential]);
-
   const handleGoogleSignIn = () => {
-    if (window.google?.accounts?.id) {
-      window.google.accounts.id.prompt();
-    }
+    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+    const siteUrl = window.location.origin;
+    window.location.href =
+      `https://accounts.google.com/o/oauth2/v2/auth?` +
+      `client_id=${clientId}` +
+      `&redirect_uri=${encodeURIComponent(siteUrl + "/api/auth/google/callback")}` +
+      `&response_type=code` +
+      `&scope=openid%20email%20profile` +
+      `&access_type=offline` +
+      `&prompt=consent`;
   };
 
   const handleRegister = async (e: React.FormEvent) => {

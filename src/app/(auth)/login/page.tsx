@@ -1,25 +1,11 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Suspense } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-
-declare global {
-  interface Window {
-    google?: {
-      accounts: {
-        id: {
-          initialize: (config: Record<string, unknown>) => void;
-          renderButton: (element: HTMLElement, config: Record<string, unknown>) => void;
-          prompt: () => void;
-        };
-      };
-    };
-  }
-}
 
 function LoginForm() {
   const router = useRouter();
@@ -36,53 +22,22 @@ function LoginForm() {
       setError("You don't have access to that page.");
     } else if (authError === "session_expired") {
       setError("Your session expired. Please sign in again.");
+    } else if (authError?.startsWith("google_")) {
+      setError("Google sign-in failed. Please try again.");
     }
   }, [authError]);
 
-  const handleGoogleCredential = useCallback(
-    async (response: { credential?: string }) => {
-      if (!response.credential) return;
-      setLoading(true);
-      setError("");
-      try {
-        const res = await fetch("/api/auth/google", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ credential: response.credential }),
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || "Google sign-in failed");
-        router.push(redirect);
-        router.refresh();
-      } catch (err: unknown) {
-        setError(err instanceof Error ? err.message : "Google sign-in failed");
-        setLoading(false);
-      }
-    },
-    [redirect, router]
-  );
-
-  useEffect(() => {
-    const script = document.createElement("script");
-    script.src = "https://accounts.google.com/gsi/client";
-    script.async = true;
-    script.onload = () => {
-      if (window.google?.accounts?.id) {
-        window.google.accounts.id.initialize({
-          client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "",
-          callback: handleGoogleCredential,
-          use_fedcm_for_prompt: false,
-        });
-      }
-    };
-    document.body.appendChild(script);
-    return () => { document.body.removeChild(script); };
-  }, [handleGoogleCredential]);
-
   const handleGoogleSignIn = () => {
-    if (window.google?.accounts?.id) {
-      window.google.accounts.id.prompt();
-    }
+    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+    const siteUrl = window.location.origin;
+    window.location.href =
+      `https://accounts.google.com/o/oauth2/v2/auth?` +
+      `client_id=${clientId}` +
+      `&redirect_uri=${encodeURIComponent(siteUrl + "/api/auth/google/callback")}` +
+      `&response_type=code` +
+      `&scope=openid%20email%20profile` +
+      `&access_type=offline` +
+      `&prompt=consent`;
   };
 
   const handleLogin = async (e: React.FormEvent) => {
