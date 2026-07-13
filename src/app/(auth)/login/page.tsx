@@ -18,14 +18,17 @@ function LoginForm() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    const detail = searchParams.get("detail");
     if (authError === "unauthorized") {
       setError("You don't have access to that page.");
     } else if (authError === "session_expired") {
       setError("Your session expired. Please sign in again.");
+    } else if (authError === "google_token_exchange") {
+      setError("Google sign-in failed: could not exchange token. Check GOOGLE_CLIENT_SECRET.");
     } else if (authError?.startsWith("google_")) {
-      setError("Google sign-in failed. Please try again.");
+      setError(`Google sign-in failed${detail ? ": " + decodeURIComponent(detail) : ""}.`);
     }
-  }, [authError]);
+  }, [authError, searchParams]);
 
   const handleGoogleSignIn = () => {
     const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;

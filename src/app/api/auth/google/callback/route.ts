@@ -85,6 +85,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     const origin = request.headers.get("origin") || new URL(request.url).origin;
     console.error("Google callback error:", error);
-    return NextResponse.redirect(new URL("/login?error=google_failed", origin));
+    const msg = error instanceof Error ? error.message : "unknown";
+    return NextResponse.redirect(new URL(`/login?error=google_failed&detail=${encodeURIComponent(msg)}`, origin));
   }
 }

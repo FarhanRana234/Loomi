@@ -45,13 +45,15 @@ export async function POST(request: NextRequest) {
     const decoded = await getAdminAuth().verifyIdToken(idToken);
 
     await connectToDatabase();
-    const user = await User.findOne({ firebaseId: decoded.uid }).select("-__v");
+    let user = await User.findOne({ firebaseId: decoded.uid }).select("-__v");
 
     if (!user) {
-      return NextResponse.json(
-        { success: false, error: "User not found. Please register first." },
-        { status: 404 }
-      );
+      user = await User.create({
+        firebaseId: decoded.uid,
+        email: decoded.email || email,
+        username: decoded.email?.split("@")[0] || email.split("@")[0],
+        avatarUrl: decoded.picture || "",
+      });
     }
 
     const response = NextResponse.json({ success: true, data: { user } });
