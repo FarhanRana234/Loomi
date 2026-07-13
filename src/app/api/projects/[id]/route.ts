@@ -2,7 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import mongoose from "mongoose";
 import { connectToDatabase } from "@/lib/db";
 import Project from "@/models/Project";
-import { isVideoUrl, signUrl } from "@/lib/cloudinary";
+import User from "@/models/User";
+import Moodboard from "@/models/Moodboard";
+import { verifyRequest } from "@/lib/auth";
+import { isVideoUrl, signUrl, getCloudinary } from "@/lib/cloudinary";
 
 function isValidObjectId(id: string): boolean {
   return mongoose.Types.ObjectId.isValid(id);
@@ -84,6 +87,103 @@ export async function GET(
     console.error("GET /api/projects/[id] error:", error);
     return NextResponse.json(
       { success: false, error: "Failed to fetch project" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+
+    if (!isValidObjectId(id)) {
+      return NextResponse.json(
+        { success: false, error: "Invalid project ID" },
+        { status: 400 }
+      );
+    }
+
+    const decoded = await verifyRequest(request);
+    if (!decoded) {
+      return NextResponse.json(
+        { success: false, error: "Not authenticated" },
+        { status: 401 }
+      );
+    }
+
+    await connectToDatabase();
+
+    // Fetch the requesting user
+    const currentUser = await User.findOne({ firebaseId: decoded.uid });
+    if (!currentUser) {
+      return NextResponse.json(
+        { success: false, error: "User not found" },
+        { status: 404 }
+      );
+    }
+
+    // Fetch the target project
+    const project = await Project.findById(id);
+    if (!project) {
+      return NextResponse.json(
+        { success: false, error: "Project not found" },
+        { status: 404 }
+      );
+    }
+
+    // Access control: owner OR admin
+    const isOwner = project.userId.toString() === currentUser._id.toString();
+    const isAdmin = currentUser.role === "admin";
+
+    if (!isOwner && !isAdmin) {
+      return NextResponse.json(
+        { success: false, error: "Forbidden" },
+        { status: 403 }
+      );
+    }
+
+    // 1. Destroy from Cloudinary
+    if (project.cloudinaryPublicId) {
+      try {
+        const c = getCloudinary();
+        const resourceType = isVideoUrl(project.mediaUrl) ? "video" : "image";
+        await c.uploader.destroy(project.cloudinaryPublicId, {
+          resource_type: resourceType,
+        });
+      } catch (cloudErr) {
+        console.error("Cloudinary deletion failed (non-fatal):", cloudErr);
+      }
+    }
+
+    // 2. Delete the project document
+    await Project.findByIdAndDelete(id);
+
+    // 3. Cascade: remove from all users' likes
+    await User.updateMany(
+      { _id: { $in: project.likes } },
+      { $pull: { likes: project._id } }
+    ).catch(() => {});
+
+    // 4. Cascade: remove from all moodboards
+    await Moodboard.updateMany(
+      { projects: project._id },
+      { $pull: { projects: project._id } }
+    ).catch(() => {});
+
+    return NextResponse.json({ success: true });
+  } catch (error: unknown) {
+    if (error instanceof Error && error.name === "CastError") {
+      return NextResponse.json(
+        { success: false, error: "Invalid project ID" },
+        { status: 400 }
+      );
+    }
+    console.error("DELETE /api/projects/[id] error:", error);
+    return NextResponse.json(
+      { success: false, error: "Failed to delete project" },
       { status: 500 }
     );
   }

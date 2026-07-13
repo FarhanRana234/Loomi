@@ -1,33 +1,59 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Eye, Heart, FolderOpen, Plus } from "lucide-react";
+import { Eye, Heart, FolderOpen, Plus, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 import { AnalyticsChart } from "@/components/features/AnalyticsChart";
 import { useUserStore } from "@/hooks/useUserStore";
-import type { IProject, IUser } from "@/types";
+import type { IProject } from "@/types";
 
 export default function DashboardPage() {
   const storeUser = useUserStore((s) => s.user);
   const [projects, setProjects] = useState<IProject[]>([]);
   const [stats, setStats] = useState({ views: 0, likes: 0, count: 0 });
+  const [deleting, setDeleting] = useState<string | null>(null);
+
+  const fetchProjects = useCallback(async () => {
+    if (!storeUser) return;
+    try {
+      const res = await fetch(`/api/projects?userId=${storeUser._id}&limit=100`);
+      const p = await res.json();
+      const items = p.data?.items || [];
+      setProjects(items);
+      setStats({
+        views: items.reduce((a: number, i: IProject) => a + i.views, 0),
+        likes: items.reduce((a: number, i: IProject) => a + i.likes.length, 0),
+        count: items.length,
+      });
+    } catch {
+      // silent
+    }
+  }, [storeUser]);
 
   useEffect(() => {
-    if (!storeUser) return;
-    fetch(`/api/projects?userId=${storeUser._id}&limit=100`)
-      .then((r) => r.json())
-      .then((p) => {
-        const items = p.data?.items || [];
-        setProjects(items);
-        setStats({
-          views: items.reduce((a: number, i: IProject) => a + i.views, 0),
-          likes: items.reduce((a: number, i: IProject) => a + i.likes.length, 0),
-          count: items.length,
-        });
-      });
-  }, [storeUser]);
+    fetchProjects();
+  }, [fetchProjects]);
+
+  const handleDelete = async (projectId: string) => {
+    if (!confirm("Are you sure you want to delete this project? This cannot be undone.")) return;
+
+    setDeleting(projectId);
+    try {
+      const res = await fetch(`/api/projects/${projectId}`, { method: "DELETE" });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to delete");
+      }
+      toast.success("Project deleted");
+      fetchProjects();
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Delete failed");
+    }
+    setDeleting(null);
+  };
 
   const chartData = projects.slice(0, 7).map((p) => ({
     name: p.title.slice(0, 8),
@@ -144,6 +170,15 @@ export default function DashboardPage() {
                   <span className="rounded-full bg-muted px-2 py-0.5 text-xs">
                     {project.status}
                   </span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 shrink-0"
+                    disabled={deleting === project._id}
+                    onClick={() => handleDelete(project._id)}
+                  >
+                    <Trash2 className={`h-4 w-4 ${deleting === project._id ? "animate-pulse" : "text-destructive"}`} />
+                  </Button>
                 </div>
               ))}
             </div>

@@ -3,6 +3,45 @@ import { connectToDatabase } from "@/lib/db";
 import Project from "@/models/Project";
 import { verifyRequest } from "@/lib/auth";
 import User from "@/models/User";
+import { isVideoUrl, signUrl } from "@/lib/cloudinary";
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type LeanProject = any;
+
+function enrichProject(p: LeanProject): Record<string, unknown> {
+  const enriched: Record<string, unknown> = { ...p };
+
+  if (p.cloudinaryPublicId) {
+    const publicId = p.cloudinaryPublicId as string;
+    const url = p.mediaUrl as string;
+    const isProtected = !!p.protected;
+    const isVideo = isVideoUrl(url);
+
+    if (isProtected || isVideo) {
+      if (isVideo) {
+        enriched.signedVideoUrl = signUrl(publicId, {
+          resource_type: "video",
+          type: "authenticated",
+          expiresInSeconds: 3600,
+        });
+        enriched.signedThumbnailUrl = signUrl(publicId, {
+          resource_type: "video",
+          format: "jpg",
+          type: "authenticated",
+          expiresInSeconds: 3600,
+        });
+      } else if (isProtected) {
+        enriched.signedImageUrl = signUrl(publicId, {
+          resource_type: "image",
+          type: "authenticated",
+          expiresInSeconds: 3600,
+        });
+      }
+    }
+  }
+
+  return enriched;
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -34,9 +73,11 @@ export async function GET(request: NextRequest) {
       .limit(limit)
       .lean();
 
+    const enrichedItems = items.map(enrichProject);
+
     return NextResponse.json({
       success: true,
-      data: { items, total, page, limit, totalPages: Math.ceil(total / limit) },
+      data: { items: enrichedItems, total, page, limit, totalPages: Math.ceil(total / limit) },
     });
   } catch (error) {
     console.error("GET /api/projects error:", error);
