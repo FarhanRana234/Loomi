@@ -9,11 +9,13 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { ProjectCard } from "@/components/features/ProjectCard";
 import type { IProject } from "@/types";
 
 export default function ProjectDetailPage() {
   const params = useParams();
   const [project, setProject] = useState<IProject | null>(null);
+  const [related, setRelated] = useState<IProject[]>([]);
   const [loading, setLoading] = useState(true);
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
@@ -30,6 +32,16 @@ export default function ProjectDetailPage() {
         setLoading(false);
       });
   }, [params.id]);
+
+  useEffect(() => {
+    if (project) {
+      fetch(`/api/projects/${params.id}/related`)
+        .then((r) => r.json())
+        .then((d) => {
+          if (d.success && d.data) setRelated(d.data);
+        });
+    }
+  }, [params.id, project]);
 
   const handleLike = () => {
     startTransition(async () => {
@@ -107,11 +119,19 @@ export default function ProjectDetailPage() {
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-5">
         {/* Hero Image */}
         <div className="lg:col-span-3">
-          <img
-            src={project.mediaUrl}
-            alt={project.title}
-            className="w-full rounded-xl object-cover"
-          />
+          {project.mediaUrl.includes(".mp4") || project.mediaUrl.includes("video") ? (
+            <video
+              src={project.mediaUrl}
+              controls
+              className="w-full rounded-xl object-cover"
+            />
+          ) : (
+            <img
+              src={project.mediaUrl}
+              alt={project.title}
+              className="w-full rounded-xl object-cover"
+            />
+          )}
         </div>
 
         {/* Details Sidebar */}
@@ -180,6 +200,18 @@ export default function ProjectDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* More Like This */}
+      {related.length > 0 && (
+        <div className="mt-16">
+          <h2 className="text-xl font-bold tracking-tight">You may also like</h2>
+          <div className="mt-6 columns-1 gap-4 sm:columns-2 lg:columns-3 xl:columns-4">
+            {related.map((p) => (
+              <ProjectCard key={p._id} project={p} />
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
