@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,6 +28,7 @@ export function Navbar() {
   const [user, setUser] = useState<NavbarUser | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchValue, setSearchValue] = useState(searchParams.get("q") || "");
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     fetch("/api/auth/me")
@@ -38,44 +39,40 @@ export function Navbar() {
       .catch(() => {});
   }, []);
 
-  useEffect(() => {
-    setSearchValue(searchParams.get("q") || "");
-  }, [searchParams]);
-
-  const handleSearch = (value: string) => {
-    const trimmed = value.trim();
-    if (pathname === "/") {
-      const params = new URLSearchParams(searchParams.toString());
-      if (trimmed) {
-        params.set("q", trimmed);
+  const pushSearch = useCallback(
+    (value: string) => {
+      const trimmed = value.trim();
+      if (pathname === "/") {
+        const params = new URLSearchParams(searchParams.toString());
+        if (trimmed) {
+          params.set("q", trimmed);
+        } else {
+          params.delete("q");
+        }
+        router.push(`/?${params.toString()}`);
       } else {
-        params.delete("q");
+        router.push(trimmed ? `/?q=${encodeURIComponent(trimmed)}` : "/");
       }
-      router.push(`/?${params.toString()}`);
-    } else {
-      router.push(trimmed ? `/?q=${encodeURIComponent(trimmed)}` : "/");
-    }
+    },
+    [pathname, searchParams, router]
+  );
+
+  const handleSearchChange = (value: string) => {
+    setSearchValue(value);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      pushSearch(value);
+    }, 400);
+  };
+
+  const handleSearchSubmit = (value: string) => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    pushSearch(value);
   };
 
   const initials = user?.username
     ? user.username.slice(0, 2).toUpperCase()
     : "??";
-
-  const SearchInput = ({ className }: { className?: string }) => (
-    <div className={`relative ${className}`}>
-      <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-      <input
-        type="text"
-        value={searchValue}
-        onChange={(e) => setSearchValue(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") handleSearch(searchValue);
-        }}
-        placeholder="Search projects..."
-        className="h-9 w-full rounded-lg border border-input bg-transparent pl-8 pr-3 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-      />
-    </div>
-  );
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-background/80 backdrop-blur-md">
@@ -86,7 +83,21 @@ export function Navbar() {
         </Link>
 
         {/* Center: Search (hidden on mobile) */}
-        <SearchInput className="hidden flex-1 justify-center md:flex max-w-sm mx-4" />
+        <div className="hidden flex-1 justify-center md:flex mx-4 max-w-sm">
+          <div className="relative w-full">
+            <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+            <input
+              type="text"
+              value={searchValue}
+              onChange={(e) => handleSearchChange(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleSearchSubmit(searchValue);
+              }}
+              placeholder="Search projects..."
+              className="h-9 w-full rounded-lg border border-input bg-transparent pl-8 pr-3 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            />
+          </div>
+        </div>
 
         {/* Right: Auth + Theme */}
         <div className="flex items-center gap-2">
@@ -164,7 +175,19 @@ export function Navbar() {
       {/* Mobile menu */}
       {mobileOpen && (
         <div className="border-t border-border px-4 py-3 md:hidden">
-          <SearchInput className="mb-3" />
+          <div className="relative mb-3">
+            <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+            <input
+              type="text"
+              value={searchValue}
+              onChange={(e) => handleSearchChange(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleSearchSubmit(searchValue);
+              }}
+              placeholder="Search projects..."
+              className="h-9 w-full rounded-lg border border-input bg-transparent pl-8 pr-3 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            />
+          </div>
           {user && (
             <div className="flex flex-col gap-1">
               <Link
