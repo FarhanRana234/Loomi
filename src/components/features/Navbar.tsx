@@ -140,6 +140,7 @@ export function Navbar() {
                 <DropdownMenuItem
                   onClick={() => {
                     fetch("/api/auth/logout", { method: "POST" }).then(() => {
+                      sessionStorage.clear();
                       window.location.href = "/login";
                     });
                   }}
@@ -201,6 +202,7 @@ export function Navbar() {
                 className="rounded-lg px-3 py-2 text-left text-sm hover:bg-accent"
                 onClick={() => {
                   fetch("/api/auth/logout", { method: "POST" }).then(() => {
+                    sessionStorage.clear();
                     window.location.href = "/login";
                   });
                 }}

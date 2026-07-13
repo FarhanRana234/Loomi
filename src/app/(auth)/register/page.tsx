@@ -42,6 +42,10 @@ export default function RegisterPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Registration failed");
 
+      if (data.data?.refreshToken) {
+        sessionStorage.setItem("loomi_refresh_token", data.data.refreshToken);
+      }
+
       router.push("/dashboard");
       router.refresh();
     } catch (err: unknown) {

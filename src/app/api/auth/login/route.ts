@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminAuth } from "@/lib/firebase-admin";
 import { connectToDatabase } from "@/lib/db";
+import { setSessionCookie } from "@/lib/session";
 import User from "@/models/User";
 
 const FIREBASE_API_KEY = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
@@ -40,7 +41,7 @@ export async function POST(request: NextRequest) {
     }
 
     const firebaseRes = await firebaseSignIn(email, password);
-    const { idToken, localId } = firebaseRes;
+    const { idToken, localId, refreshToken, expiresIn } = firebaseRes;
 
     const decoded = await getAdminAuth().verifyIdToken(idToken);
 
@@ -56,14 +57,11 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const response = NextResponse.json({ success: true, data: { user } });
-    response.cookies.set("__session", idToken, {
-      httpOnly: false,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      path: "/",
-      maxAge: 60 * 60,
+    const response = NextResponse.json({
+      success: true,
+      data: { user, refreshToken, expiresIn },
     });
+    setSessionCookie(response, idToken);
 
     return response;
   } catch (error: unknown) {

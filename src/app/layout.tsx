@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import { Navbar } from "@/components/features/Navbar";
+import { Providers } from "@/components/features/Providers";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -37,10 +38,12 @@ export default function RootLayout({
           enableSystem={false}
           disableTransitionOnChange
         >
-          <Suspense>
-            <Navbar />
-          </Suspense>
-          <main>{children}</main>
+          <Providers>
+            <Suspense>
+              <Navbar />
+            </Suspense>
+            <main>{children}</main>
+          </Providers>
         </ThemeProvider>
       </body>
     </html>

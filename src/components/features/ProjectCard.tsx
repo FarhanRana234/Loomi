@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -9,14 +10,25 @@ import type { IProject } from "@/types";
 
 interface ProjectCardProps {
   project: IProject;
+  currentUserId?: string | null;
 }
 
-export function ProjectCard({ project }: ProjectCardProps) {
-  const [liked, setLiked] = useState(false);
+export function ProjectCard({ project, currentUserId }: ProjectCardProps) {
+  const router = useRouter();
+  const [liked, setLiked] = useState(
+    currentUserId ? project.likes.includes(currentUserId) : false
+  );
   const [likeCount, setLikeCount] = useState(project.likes.length);
   const [isPending, startTransition] = useTransition();
 
-  const handleLike = () => {
+  const handleLike = (e: React.MouseEvent) => {
+    e.preventDefault();
+
+    if (!currentUserId) {
+      router.push("/login");
+      return;
+    }
+
     startTransition(async () => {
       const prevLiked = liked;
       const prevCount = likeCount;

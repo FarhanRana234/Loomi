@@ -4,9 +4,11 @@ import { useEffect, useState, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import { ProjectCard } from "./ProjectCard";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useAuth } from "@/lib/auth-context";
 import type { IProject } from "@/types";
 
 export function FeedMasonry() {
+  const { user } = useAuth();
   const searchParams = useSearchParams();
   const q = searchParams.get("q") || "";
   const tag = searchParams.get("tag") || "";
@@ -71,7 +73,7 @@ export function FeedMasonry() {
 
       <div className="columns-1 gap-4 sm:columns-2 lg:columns-3 xl:columns-4">
         {projects.map((project) => (
-          <ProjectCard key={project._id} project={project} />
+          <ProjectCard key={project._id} project={project} currentUserId={user?.uid} />
         ))}
       </div>
 

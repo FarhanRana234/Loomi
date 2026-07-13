@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Heart, Share2, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -9,11 +9,14 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/lib/auth-context";
 import { ProjectCard } from "@/components/features/ProjectCard";
 import type { IProject } from "@/types";
 
 export default function ProjectDetailPage() {
   const params = useParams();
+  const router = useRouter();
+  const { user } = useAuth();
   const [project, setProject] = useState<IProject | null>(null);
   const [related, setRelated] = useState<IProject[]>([]);
   const [loading, setLoading] = useState(true);
@@ -28,10 +31,13 @@ export default function ProjectDetailPage() {
         if (d.success && d.data) {
           setProject(d.data);
           setLikeCount(d.data.likes.length);
+          if (user) {
+            setLiked(d.data.likes.includes(user.uid));
+          }
         }
         setLoading(false);
       });
-  }, [params.id]);
+  }, [params.id, user]);
 
   useEffect(() => {
     if (project) {
@@ -44,6 +50,11 @@ export default function ProjectDetailPage() {
   }, [params.id, project]);
 
   const handleLike = () => {
+    if (!user) {
+      router.push("/login");
+      return;
+    }
+
     startTransition(async () => {
       const prevLiked = liked;
       const prevCount = likeCount;
@@ -207,7 +218,7 @@ export default function ProjectDetailPage() {
           <h2 className="text-xl font-bold tracking-tight">You may also like</h2>
           <div className="mt-6 columns-1 gap-4 sm:columns-2 lg:columns-3 xl:columns-4">
             {related.map((p) => (
-              <ProjectCard key={p._id} project={p} />
+              <ProjectCard key={p._id} project={p} currentUserId={user?.uid} />
             ))}
           </div>
         </div>

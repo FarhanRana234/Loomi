@@ -20,7 +20,10 @@ export async function POST(
 
     await connectToDatabase();
 
-    const project = await Project.findById(id);
+    const firebaseId = decoded.uid;
+
+    // Check current like status first
+    const project = await Project.findById(id).select("likes");
     if (!project) {
       return NextResponse.json(
         { success: false, error: "Project not found" },
@@ -28,22 +31,20 @@ export async function POST(
       );
     }
 
-    const firebaseId = decoded.uid;
     const alreadyLiked = project.likes.includes(firebaseId);
 
-    if (alreadyLiked) {
-      project.likes = project.likes.filter((like: string) => like !== firebaseId);
-    } else {
-      project.likes.push(firebaseId);
-    }
+    // Atomic update
+    const update = alreadyLiked
+      ? { $pull: { likes: firebaseId } }
+      : { $addToSet: { likes: firebaseId } };
 
-    await project.save();
+    const updated = await Project.findByIdAndUpdate(id, update, { new: true }).select("likes");
 
     return NextResponse.json({
       success: true,
       data: {
         liked: !alreadyLiked,
-        totalLikes: project.likes.length,
+        totalLikes: updated!.likes.length,
       },
     });
   } catch (error) {

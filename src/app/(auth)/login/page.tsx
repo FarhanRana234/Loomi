@@ -58,6 +58,10 @@ function LoginForm() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Login failed");
 
+      if (data.data?.refreshToken) {
+        sessionStorage.setItem("loomi_refresh_token", data.data.refreshToken);
+      }
+
       router.push(redirect);
       router.refresh();
     } catch (err: unknown) {

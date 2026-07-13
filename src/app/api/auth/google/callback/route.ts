@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminAuth } from "@/lib/firebase-admin";
 import { connectToDatabase } from "@/lib/db";
+import { setSessionCookie } from "@/lib/session";
 import User from "@/models/User";
 
 const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!;
@@ -97,14 +98,21 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const response = NextResponse.redirect(new URL("/dashboard", siteUrl));
-    response.cookies.set("__session", firebaseIdToken, {
-      httpOnly: false,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      path: "/",
-      maxAge: 60 * 60,
-    });
+    const response = NextResponse.redirect(
+      new URL("/dashboard?auth=google", siteUrl)
+    );
+    setSessionCookie(response, firebaseIdToken);
+
+    // Set refresh token as a short-lived cookie so client can pick it up
+    if (firebaseData.refreshToken) {
+      response.cookies.set("loomi_rt", firebaseData.refreshToken, {
+        httpOnly: false,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+        maxAge: 60 * 60 * 24 * 14,
+      });
+    }
 
     return response;
   } catch (error) {
