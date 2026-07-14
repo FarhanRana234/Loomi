@@ -7,6 +7,16 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useUserStore } from "@/hooks/useUserStore";
 import type { IComment } from "@/types";
 
+function timeAgo(date: Date): string {
+  const seconds = Math.floor((Date.now() - new Date(date).getTime()) / 1000);
+  if (seconds < 60) return "just now";
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return new Date(date).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
 interface CommentItemProps {
   comment: IComment;
   children?: IComment[];
@@ -88,7 +98,7 @@ export function CommentItem({ comment, children = [], depth = 0, onDelete }: Com
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium">{author?.username}</span>
             <span className="text-xs text-muted-foreground">
-              {new Date(comment.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+              {timeAgo(comment.createdAt)}
             </span>
           </div>
           <p className="mt-0.5 text-sm leading-relaxed text-foreground">{comment.text}</p>
