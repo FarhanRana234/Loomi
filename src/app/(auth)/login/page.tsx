@@ -88,6 +88,7 @@ function LoginForm() {
         sessionStorage.setItem("loomi_refresh_token", data.data.refreshToken);
       }
 
+      await fetchUser();
       router.push(redirect);
       router.refresh();
     } catch (err: unknown) {

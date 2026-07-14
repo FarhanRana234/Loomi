@@ -82,14 +82,9 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    const { setSessionCookie } = await import("@/lib/session");
     const response = NextResponse.json({ success: true, data: { user } });
-    response.cookies.set("__session", idToken, {
-      httpOnly: false,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      path: "/",
-      maxAge: 60 * 60,
-    });
+    await setSessionCookie(response, idToken);
 
     return response;
   } catch (error: unknown) {

@@ -33,6 +33,10 @@ export default function SettingsPage() {
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
   const [newLinkLabel, setNewLinkLabel] = useState("");
   const [newLinkUrl, setNewLinkUrl] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [settingPassword, setSettingPassword] = useState(false);
+  const [passwordError, setPasswordError] = useState("");
+  const [passwordSuccess, setPasswordSuccess] = useState("");
 
   useEffect(() => {
     if (storeUser) {
@@ -87,6 +91,32 @@ export default function SettingsPage() {
 
   const removeSocialLink = (index: number) => {
     setSocialLinks(socialLinks.filter((_, i) => i !== index));
+  };
+
+  const handleSetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSettingPassword(true);
+    setPasswordError("");
+    setPasswordSuccess("");
+
+    try {
+      const res = await fetch("/api/auth/set-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: newPassword }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to set password");
+
+      setPasswordSuccess("Password set! You can now sign in with email and password.");
+      setNewPassword("");
+      if (storeUser) {
+        setUser({ ...storeUser, hasPassword: true });
+      }
+    } catch (err: unknown) {
+      setPasswordError(err instanceof Error ? err.message : "Failed to set password");
+    }
+    setSettingPassword(false);
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -338,6 +368,54 @@ export default function SettingsPage() {
             <p className="text-xs text-muted-foreground">
               Add links to your social profiles or portfolio
             </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              {storeUser?.hasPassword ? "Change Password" : "Set Password"}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {storeUser?.hasPassword ? (
+              <p className="text-sm text-muted-foreground">
+                To change your password, use the{" "}
+                <a href="/forgot-password" className="font-medium hover:underline">
+                  Forgot Password
+                </a>{" "}
+                flow.
+              </p>
+            ) : (
+              <>
+                <p className="mb-4 text-sm text-muted-foreground">
+                  You signed in with Google. Set a password to also enable email/password login.
+                </p>
+                <form onSubmit={handleSetPassword} className="flex gap-2">
+                  <Input
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="New password (min 6 chars)"
+                    minLength={6}
+                    className="flex-1"
+                  />
+                  <Button type="submit" disabled={settingPassword || !newPassword.trim()}>
+                    {settingPassword ? "Setting..." : "Set Password"}
+                  </Button>
+                </form>
+              </>
+            )}
+            {passwordError && (
+              <div className="mt-3 rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
+                {passwordError}
+              </div>
+            )}
+            {passwordSuccess && (
+              <div className="mt-3 rounded-lg bg-green-500/10 p-3 text-sm text-green-600">
+                {passwordSuccess}
+              </div>
+            )}
           </CardContent>
         </Card>
 

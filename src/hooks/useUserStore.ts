@@ -12,6 +12,7 @@ export interface User {
   avatarUrl: string;
   website: string;
   socialLinks: { label: string; url: string }[];
+  hasPassword: boolean;
 }
 
 interface UserStore {

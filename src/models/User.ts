@@ -11,6 +11,7 @@ export interface IUserDocument extends Document {
   socialLinks: { label: string; url: string }[];
   followersCount: number;
   followingCount: number;
+  hasPassword: boolean;
 }
 
 const UserSchema = new Schema<IUserDocument>(
@@ -66,6 +67,10 @@ const UserSchema = new Schema<IUserDocument>(
     followingCount: {
       type: Number,
       default: 0,
+    },
+    hasPassword: {
+      type: Boolean,
+      default: false,
     },
   },
   { timestamps: true }

@@ -10,6 +10,7 @@ export interface IUser {
   socialLinks: { label: string; url: string }[];
   followersCount: number;
   followingCount: number;
+  hasPassword: boolean;
   createdAt: Date;
   updatedAt: Date;
 }

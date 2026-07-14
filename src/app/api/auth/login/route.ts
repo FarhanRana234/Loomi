@@ -54,7 +54,13 @@ export async function POST(request: NextRequest) {
         email: decoded.email || email,
         username: decoded.email?.split("@")[0] || email.split("@")[0],
         avatarUrl: decoded.picture || "",
+        hasPassword: true,
       });
+    } else if (!user.hasPassword) {
+      return NextResponse.json(
+        { success: false, error: "This account uses Google Sign-In. Please sign in with Google instead." },
+        { status: 403 }
+      );
     }
 
     const response = NextResponse.json({

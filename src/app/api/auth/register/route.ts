@@ -60,6 +60,7 @@ export async function POST(request: NextRequest) {
       email: decoded.email || email,
       username,
       avatarUrl: decoded.picture || "",
+      hasPassword: true,
     });
 
     const response = NextResponse.json(

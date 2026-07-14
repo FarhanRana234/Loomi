@@ -72,6 +72,7 @@ export default function RegisterPage() {
         sessionStorage.setItem("loomi_refresh_token", data.data.refreshToken);
       }
 
+      await fetchUser();
       router.push("/dashboard");
       router.refresh();
     } catch (err: unknown) {
