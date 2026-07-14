@@ -47,7 +47,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
   };
 
   return (
-    <div className="group relative mb-4 break-inside-avoid overflow-hidden rounded-xl border border-border bg-card">
+    <div className="group relative overflow-hidden rounded-xl border border-border bg-card">
       <Link href={`/project/${project._id}`}>
         <div className="relative overflow-hidden">
           <img

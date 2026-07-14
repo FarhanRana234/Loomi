@@ -1,10 +1,40 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
 import { ProjectCard } from "./ProjectCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { IProject } from "@/types";
+
+function useMediaColumns() {
+  const [columns, setColumns] = useState(4);
+
+  useEffect(() => {
+    function update() {
+      const w = window.innerWidth;
+      if (w >= 1280) setColumns(4);
+      else if (w >= 1024) setColumns(3);
+      else if (w >= 640) setColumns(2);
+      else setColumns(1);
+    }
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
+
+  return columns;
+}
+
+function distributeToColumns<T>(items: T[], numColumns: number): T[][] {
+  const columns: T[][] = Array.from({ length: numColumns }, () => []);
+  items.forEach((item) => {
+    const shortestIdx = columns.reduce((minIdx, col, idx) =>
+      col.length < columns[minIdx].length ? idx : minIdx, 0);
+    columns[shortestIdx].push(item);
+  });
+  return columns;
+}
 
 export function FeedMasonry() {
   const searchParams = useSearchParams();
@@ -14,6 +44,8 @@ export function FeedMasonry() {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [hasMore, setHasMore] = useState(true);
+
+  const numColumns = useMediaColumns();
 
   const fetchProjects = useCallback(async (pageNum: number, search: string, searchTag: string) => {
     setLoading(true);
@@ -61,6 +93,11 @@ export function FeedMasonry() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, [loading, hasMore, fetchProjects, q, tag]);
 
+  const columns = useMemo(
+    () => distributeToColumns(projects, numColumns),
+    [projects, numColumns]
+  );
+
   return (
     <div>
       {q && (
@@ -69,21 +106,54 @@ export function FeedMasonry() {
         </p>
       )}
 
-      <div className="columns-1 gap-4 sm:columns-2 lg:columns-3 xl:columns-4">
-        {projects.map((project) => (
-          <ProjectCard key={project._id} project={project} />
-        ))}
-      </div>
-
-      {loading && (
-        <div className="mt-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="space-y-2">
-              <Skeleton className="h-48 w-full rounded-xl" />
-              <Skeleton className="h-4 w-3/4 rounded-md" />
-              <Skeleton className="h-3 w-1/2 rounded-md" />
+      {projects.length > 0 && (
+        <div className="flex gap-4">
+          {columns.map((col, colIdx) => (
+            <div key={colIdx} className="flex min-w-0 flex-1 flex-col gap-4">
+              <AnimatePresence mode="popLayout">
+                {col.map((project) => (
+                  <motion.div
+                    key={project._id}
+                    layout
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    transition={{
+                      opacity: { duration: 0.5 },
+                      y: { duration: 0.5 },
+                      layout: { type: "spring", stiffness: 300, damping: 30 },
+                    }}
+                  >
+                    <ProjectCard project={project} />
+                  </motion.div>
+                ))}
+              </AnimatePresence>
             </div>
           ))}
+        </div>
+      )}
+
+      {loading && projects.length === 0 && (
+        <div className="flex gap-4">
+          {Array.from({ length: numColumns }).map((_, colIdx) => (
+            <div key={colIdx} className="flex min-w-0 flex-1 flex-col gap-4">
+              {Array.from({ length: colIdx % 2 === 0 ? 3 : 2 }).map((_, i) => (
+                <div key={i} className="rounded-xl border border-border bg-card p-3">
+                  <Skeleton className={`w-full rounded-lg ${i % 2 === 0 ? "h-48" : "h-64"}`} />
+                  <div className="mt-3 space-y-2">
+                    <Skeleton className="h-4 w-3/4 rounded-md" />
+                    <Skeleton className="h-3 w-1/2 rounded-md" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {loading && projects.length > 0 && (
+        <div className="flex justify-center py-8">
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-current border-t-transparent" />
         </div>
       )}
 
