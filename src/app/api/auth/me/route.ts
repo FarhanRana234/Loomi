@@ -1,25 +1,48 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
 import { connectToDatabase } from "@/lib/db";
 import User from "@/models/User";
 import { getAdminAuth } from "@/lib/firebase-admin";
 
-async function getAuthUser() {
-  const cookieStore = await cookies();
-  const sessionCookie = cookieStore.get("__session")?.value;
-  if (!sessionCookie) return null;
-  try {
-    const decoded = await getAdminAuth().verifySessionCookie(sessionCookie);
-    await connectToDatabase();
-    return await User.findOne({ firebaseId: decoded.uid }).select("-__v");
-  } catch {
-    return null;
+async function getAuthUser(request?: NextRequest) {
+  let uid: string | null = null;
+
+  if (request) {
+    const authHeader = request.headers.get("authorization");
+    if (authHeader?.startsWith("Bearer ")) {
+      try {
+        const decoded = await getAdminAuth().verifyIdToken(
+          authHeader.split("Bearer ")[1]
+        );
+        uid = decoded.uid;
+      } catch {
+        // invalid ID token
+      }
+    }
   }
+
+  if (!uid) {
+    const { cookies } = await import("next/headers");
+    const cookieStore = await cookies();
+    const sessionCookie = cookieStore.get("__session")?.value;
+    if (sessionCookie) {
+      try {
+        const decoded = await getAdminAuth().verifySessionCookie(sessionCookie);
+        uid = decoded.uid;
+      } catch {
+        // invalid session cookie
+      }
+    }
+  }
+
+  if (!uid) return null;
+
+  await connectToDatabase();
+  return await User.findOne({ firebaseId: uid }).select("-__v");
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const user = await getAuthUser();
+    const user = await getAuthUser(request);
     if (!user) {
       return NextResponse.json(
         { success: false, error: "Not authenticated" },
@@ -37,7 +60,7 @@ export async function GET() {
 
 export async function PATCH(request: NextRequest) {
   try {
-    const user = await getAuthUser();
+    const user = await getAuthUser(request);
     if (!user) {
       return NextResponse.json(
         { success: false, error: "Not authenticated" },

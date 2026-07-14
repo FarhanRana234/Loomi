@@ -15,6 +15,13 @@ export async function extractToken(request: NextRequest): Promise<string | null>
 export async function verifyRequest(request: NextRequest) {
   const token = await extractToken(request);
   if (!token) return null;
+
+  try {
+    return await getAdminAuth().verifyIdToken(token);
+  } catch {
+    // Not a raw ID token — try as session cookie
+  }
+
   try {
     return await getAdminAuth().verifySessionCookie(token);
   } catch {

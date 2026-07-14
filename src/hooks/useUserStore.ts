@@ -1,6 +1,7 @@
 "use client";
 
 import { create } from "zustand";
+import { fetchWithAuth } from "@/lib/fetch-with-auth";
 
 export interface User {
   _id: string;
@@ -38,7 +39,7 @@ export const useUserStore = create<UserStore>((set) => ({
 
   fetchUser: async () => {
     try {
-      const res = await fetch("/api/auth/me");
+      const res = await fetchWithAuth("/api/auth/me");
       if (res.ok) {
         const d = await res.json();
         if (d.success && d.data) {
@@ -54,7 +55,7 @@ export const useUserStore = create<UserStore>((set) => ({
 
   logout: async () => {
     try {
-      await fetch("/api/auth/logout", { method: "POST" });
+      await fetchWithAuth("/api/auth/logout", { method: "POST" });
     } catch {
       // best-effort
     }
