@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
           { success: true, data: { user, refreshToken: signInRes.refreshToken, expiresIn: signInRes.expiresIn } },
           { status: 200 }
         );
-        setSessionCookie(response, idToken);
+        await setSessionCookie(response, idToken);
         return response;
       }
 
@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
         { success: true, data: { user, refreshToken: signInRes.refreshToken, expiresIn: signInRes.expiresIn } },
         { status: 201 }
       );
-      setSessionCookie(response, idToken);
+      await setSessionCookie(response, idToken);
       return response;
     } else {
       throw new Error(firebaseRes.data?.error?.message || "Registration failed");
@@ -121,7 +121,7 @@ export async function POST(request: NextRequest) {
       { success: true, data: { user, refreshToken: firebaseRes.data.refreshToken, expiresIn: firebaseRes.data.expiresIn } },
       { status: 201 }
     );
-    setSessionCookie(response, idToken!);
+    await setSessionCookie(response, idToken!);
 
     return response;
   } catch (error: unknown) {

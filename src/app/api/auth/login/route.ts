@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
       success: true,
       data: { user, refreshToken, expiresIn },
     });
-    setSessionCookie(response, idToken);
+    await setSessionCookie(response, idToken);
 
     return response;
   } catch (error: unknown) {

@@ -101,7 +101,7 @@ export async function GET(request: NextRequest) {
     const response = NextResponse.redirect(
       new URL("/dashboard?auth=google", siteUrl)
     );
-    setSessionCookie(response, firebaseIdToken);
+    await setSessionCookie(response, firebaseIdToken);
 
     // Set refresh token as a short-lived cookie so client can pick it up
     if (firebaseData.refreshToken) {
