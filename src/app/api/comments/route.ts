@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
     await connectToDatabase();
 
     const comments = await Comment.find({ projectId })
-      .populate("userId", "username avatarUrl")
+      .populate("userId", "username avatarUrl firebaseId")
       .sort({ createdAt: -1 })
       .lean();
 
@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
       parentId: parentId || null,
     });
 
-    const populated = await comment.populate("userId", "username avatarUrl");
+    const populated = await comment.populate("userId", "username avatarUrl firebaseId");
 
     return NextResponse.json({ success: true, data: populated }, { status: 201 });
   } catch (error) {

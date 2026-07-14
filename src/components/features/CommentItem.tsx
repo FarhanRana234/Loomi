@@ -22,8 +22,9 @@ export function CommentItem({ comment, children = [], depth = 0, onDelete }: Com
   const [sending, setSending] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  const author = comment.userId as unknown as { username: string; avatarUrl: string };
-  const isOwner = user?.firebaseId === (comment.userId as unknown as { firebaseId: string })?.firebaseId;
+  const author = comment.userId as unknown as { username: string; avatarUrl: string; firebaseId?: string };
+  const commentFirebaseId = (comment.userId as unknown as { firebaseId?: string })?.firebaseId;
+  const isOwner = !!user && !!commentFirebaseId && user.firebaseId === commentFirebaseId;
   const canReply = depth < 2;
 
   useEffect(() => {
