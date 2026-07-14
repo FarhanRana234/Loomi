@@ -127,7 +127,7 @@ export async function POST(request: NextRequest) {
     }
 
     const project = await Project.create({
-      title: title.toLowerCase(),
+      title,
       description: description || "",
       categories: (categories || []).map((c: string) => c.toLowerCase().trim()),
       cloudinaryPublicId,
