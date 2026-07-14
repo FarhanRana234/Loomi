@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState, useCallback, useMemo } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
+import { X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ProjectCard } from "./ProjectCard";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -20,6 +21,7 @@ function distributeToColumns<T>(items: T[], numColumns: number): T[][] {
 
 export function FeedMasonry() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const q = searchParams.get("q") || "";
   const categoriesParam = searchParams.get("categories") || "";
   const [projects, setProjects] = useState<IProject[]>([]);
@@ -80,23 +82,56 @@ export function FeedMasonry() {
     [projects, numColumns]
   );
 
+  const activeCategories = categoriesParam
+    ? categoriesParam.split(",").map((c) => c.trim()).filter(Boolean)
+    : [];
+
+  const removeCategory = (cat: string) => {
+    const next = activeCategories.filter((c) => c !== cat);
+    const sp = new URLSearchParams(searchParams.toString());
+    if (next.length > 0) {
+      sp.set("categories", next.join(","));
+    } else {
+      sp.delete("categories");
+    }
+    router.push(`/?${sp.toString()}`);
+  };
+
+  const clearFilters = () => {
+    router.push("/");
+  };
+
   return (
     <div>
-      {(q || categoriesParam) && (
-        <p className="mb-4 text-sm text-muted-foreground">
-          {q && <>Showing results for &ldquo;{q}&rdquo;</>}
-          {q && categoriesParam && " in "}
-          {categoriesParam && (
-            <>
-              {categoriesParam.split(",").map((c) => c.trim()).filter(Boolean).map((cat, i) => (
-                <span key={cat}>
-                  {i > 0 && " + "}
-                  <span className="font-medium text-foreground">{cat}</span>
-                </span>
-              ))}
-            </>
+      {(q || activeCategories.length > 0) && (
+        <div className="mb-4 flex flex-wrap items-center gap-2">
+          {q && (
+            <span className="text-sm text-muted-foreground">
+              Showing results for &ldquo;{q}&rdquo;
+            </span>
           )}
-        </p>
+          {q && activeCategories.length > 0 && (
+            <span className="text-sm text-muted-foreground">in</span>
+          )}
+          {activeCategories.map((cat) => (
+            <button
+              key={cat}
+              onClick={() => removeCategory(cat)}
+              className="inline-flex items-center gap-1 rounded-full bg-foreground px-2.5 py-1 text-xs font-medium text-background transition-opacity hover:opacity-80"
+            >
+              {cat}
+              <X className="h-3 w-3" />
+            </button>
+          ))}
+          {(q || activeCategories.length > 0) && (
+            <button
+              onClick={clearFilters}
+              className="text-xs text-muted-foreground underline transition-colors hover:text-foreground"
+            >
+              Clear all
+            </button>
+          )}
+        </div>
       )}
 
       {projects.length > 0 && (
