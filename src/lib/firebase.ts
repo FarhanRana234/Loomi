@@ -2,11 +2,10 @@
 
 import { initializeApp, getApps } from "firebase/app";
 import {
-  initializeAuth,
   getAuth,
+  setPersistence,
   browserLocalPersistence,
   GoogleAuthProvider,
-  type Auth,
 } from "firebase/auth";
 
 const firebaseConfig = {
@@ -17,12 +16,7 @@ const firebaseConfig = {
 
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
 
-let auth: Auth;
-try {
-  auth = initializeAuth(app, { persistence: browserLocalPersistence });
-} catch {
-  auth = getAuth(app);
-}
-
-export { auth };
+export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
+
+setPersistence(auth, browserLocalPersistence).catch(() => {});
