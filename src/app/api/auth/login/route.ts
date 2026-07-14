@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
     }
 
     const firebaseRes = await firebaseSignIn(email, password);
-    const { idToken, localId, refreshToken, expiresIn } = firebaseRes;
+    const { idToken, refreshToken, expiresIn } = firebaseRes;
 
     const decoded = await getAdminAuth().verifyIdToken(idToken);
 
@@ -57,10 +57,8 @@ export async function POST(request: NextRequest) {
         hasPassword: true,
       });
     } else if (!user.hasPassword) {
-      return NextResponse.json(
-        { success: false, error: "This account uses Google Sign-In. Please sign in with Google instead." },
-        { status: 403 }
-      );
+      user.hasPassword = true;
+      await user.save();
     }
 
     const response = NextResponse.json({

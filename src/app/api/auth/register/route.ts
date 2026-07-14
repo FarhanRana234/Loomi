@@ -15,9 +15,21 @@ async function firebaseSignUp(email: string, password: string) {
       body: JSON.stringify({ email, password, returnSecureToken: true }),
     }
   );
+  return { ok: res.ok, data: await res.json().catch(() => ({})) };
+}
+
+async function firebaseSignIn(email: string, password: string) {
+  const res = await fetch(
+    `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${FIREBASE_API_KEY}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password, returnSecureToken: true }),
+    }
+  );
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(err.error?.message || "Registration failed");
+    throw new Error(err.error?.message || "Invalid credentials");
   }
   return res.json();
 }
@@ -50,10 +62,52 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const firebaseRes = await firebaseSignUp(email, password);
-    const { idToken, localId, refreshToken, expiresIn } = firebaseRes;
+    let firebaseRes = await firebaseSignUp(email, password);
+    let idToken: string;
 
-    const decoded = await getAdminAuth().verifyIdToken(idToken);
+    if (firebaseRes.ok) {
+      idToken = firebaseRes.data.idToken;
+    } else if (firebaseRes.data?.error?.message === "EMAIL_EXISTS") {
+      const signInRes = await firebaseSignIn(email, password);
+      idToken = signInRes.idToken;
+
+      const decoded = await getAdminAuth().verifyIdToken(idToken);
+      let user = await User.findOne({ firebaseId: decoded.uid });
+
+      if (user) {
+        user.hasPassword = true;
+        if (!user.username || user.username === email.split("@")[0]) {
+          user.username = username;
+        }
+        await user.save();
+
+        const response = NextResponse.json(
+          { success: true, data: { user, refreshToken: signInRes.refreshToken, expiresIn: signInRes.expiresIn } },
+          { status: 200 }
+        );
+        setSessionCookie(response, idToken);
+        return response;
+      }
+
+      user = await User.create({
+        firebaseId: decoded.uid,
+        email: decoded.email || email,
+        username,
+        avatarUrl: decoded.picture || "",
+        hasPassword: true,
+      });
+
+      const response = NextResponse.json(
+        { success: true, data: { user, refreshToken: signInRes.refreshToken, expiresIn: signInRes.expiresIn } },
+        { status: 201 }
+      );
+      setSessionCookie(response, idToken);
+      return response;
+    } else {
+      throw new Error(firebaseRes.data?.error?.message || "Registration failed");
+    }
+
+    const decoded = await getAdminAuth().verifyIdToken(idToken!);
 
     const user = await User.create({
       firebaseId: decoded.uid,
@@ -64,10 +118,10 @@ export async function POST(request: NextRequest) {
     });
 
     const response = NextResponse.json(
-      { success: true, data: { user, refreshToken, expiresIn } },
+      { success: true, data: { user, refreshToken: firebaseRes.data.refreshToken, expiresIn: firebaseRes.data.expiresIn } },
       { status: 201 }
     );
-    setSessionCookie(response, idToken);
+    setSessionCookie(response, idToken!);
 
     return response;
   } catch (error: unknown) {
