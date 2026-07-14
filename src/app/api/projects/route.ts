@@ -48,7 +48,6 @@ export async function GET(request: NextRequest) {
     const categoriesParam = searchParams.get("categories");
     const userId = searchParams.get("userId");
     const q = searchParams.get("q");
-    const category = searchParams.get("category");
 
     const query: Record<string, unknown> = { status: "published" };
     if (categoriesParam) {
@@ -58,8 +57,6 @@ export async function GET(request: NextRequest) {
       } else if (cats.length > 1) {
         query.categories = { $in: cats };
       }
-    } else if (category) {
-      query.categories = category.toLowerCase();
     }
     if (userId) query.userId = userId;
     if (q) {
@@ -115,7 +112,6 @@ export async function POST(request: NextRequest) {
     const {
       title,
       description,
-      category,
       categories,
       cloudinaryPublicId,
       mediaUrl,
@@ -133,7 +129,6 @@ export async function POST(request: NextRequest) {
     const project = await Project.create({
       title: title.toLowerCase(),
       description: description || "",
-      category: category || "General",
       categories: (categories || []).map((c: string) => c.toLowerCase().trim()),
       cloudinaryPublicId,
       mediaUrl,

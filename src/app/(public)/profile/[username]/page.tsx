@@ -81,7 +81,6 @@ export default async function ProfilePage({ params }: PageParams) {
         : undefined,
       likes: (p.likes as string[]) || [],
       views: (p.views as number) || 0,
-      category: (p.category as string) || "",
     };
   });
 

@@ -5,36 +5,20 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { X, Shield, ShieldCheck } from "lucide-react";
 import { z } from "zod";
 import { CategorySelector } from "@/components/features/CategorySelector";
 
-const CATEGORIES = [
-  "Web Design",
-  "Motion Graphics",
-  "Photography",
-  "Full-Stack Development",
-];
-
 const uploadSchema = z.object({
   title: z.string().min(1, "Title is required"),
-  category: z.string().min(1, "Selecting a creative category is mandatory."),
   description: z.string().optional(),
-  projectCategories: z.array(z.string()).optional(),
+  projectCategories: z.array(z.string()).min(1, "At least one category is required."),
 });
 
 export default function UploadPage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [title, setTitle] = useState("");
-  const [category, setCategory] = useState("");
   const [description, setDescription] = useState("");
   const [projectCategories, setProjectCategories] = useState<string[]>([]);
   const [isProtected, setIsProtected] = useState(false);
@@ -73,7 +57,7 @@ export default function UploadPage() {
     e.preventDefault();
     setError("");
 
-    const validation = uploadSchema.safeParse({ title, category, description, projectCategories });
+    const validation = uploadSchema.safeParse({ title, description, projectCategories });
     if (!validation.success) {
       setError(validation.error.errors[0].message);
       return;
@@ -117,7 +101,6 @@ export default function UploadPage() {
         },
         body: JSON.stringify({
           title,
-          category,
           description,
           categories: projectCategories,
           cloudinaryPublicId: uploadData.public_id,
@@ -236,24 +219,6 @@ export default function UploadPage() {
                 placeholder="Project title"
                 required
               />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">
-                Category <span className="text-destructive">*</span>
-              </label>
-              <Select value={category} onValueChange={setCategory}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a creative category" />
-                </SelectTrigger>
-                <SelectContent>
-                  {CATEGORIES.map((cat) => (
-                    <SelectItem key={cat} value={cat}>
-                      {cat}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
             </div>
 
             <div className="space-y-2">

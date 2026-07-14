@@ -3,7 +3,6 @@ import mongoose, { Schema, Document } from "mongoose";
 export interface IProjectDocument extends Document {
   title: string;
   description: string;
-  category: string;
   categories: string[];
   cloudinaryPublicId: string;
   mediaUrl: string;
@@ -19,7 +18,6 @@ const ProjectSchema = new Schema<IProjectDocument>(
   {
     title: { type: String, required: true },
     description: { type: String, default: "" },
-    category: { type: String, required: true, default: "General" },
     categories: { type: [String], default: [], index: true },
     cloudinaryPublicId: { type: String, required: true },
     mediaUrl: { type: String, required: true },

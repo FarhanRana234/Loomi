@@ -29,7 +29,6 @@ interface ProjectThumb {
   thumbnailUrl?: string;
   likes: string[];
   views: number;
-  category: string;
 }
 
 interface MoodboardCard {

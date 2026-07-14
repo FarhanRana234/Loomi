@@ -136,7 +136,7 @@ export async function PATCH(
     }
 
     const body = await request.json();
-    const allowed = ["isDownloadable", "title", "description", "category", "categories", "status"];
+    const allowed = ["isDownloadable", "title", "description", "categories", "status"];
     for (const key of allowed) {
       if (key in body) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
