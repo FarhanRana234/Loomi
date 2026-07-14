@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Suspense } from "react";
 import { toast } from "sonner";
-import { signInWithPopup } from "firebase/auth";
+import { signInWithPopup, signInWithEmailAndPassword } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
 import { useUserStore } from "@/hooks/useUserStore";
 import { Button } from "@/components/ui/button";
@@ -87,6 +87,8 @@ function LoginForm() {
       if (data.data?.refreshToken) {
         sessionStorage.setItem("loomi_refresh_token", data.data.refreshToken);
       }
+
+      signInWithEmailAndPassword(auth, email, password).catch(() => {});
 
       await fetchUser();
       router.push(redirect);

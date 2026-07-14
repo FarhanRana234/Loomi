@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
-import { signInWithPopup } from "firebase/auth";
+import { signInWithPopup, signInWithEmailAndPassword } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
 import { useUserStore } from "@/hooks/useUserStore";
 import { Button } from "@/components/ui/button";
@@ -71,6 +71,8 @@ export default function RegisterPage() {
       if (data.data?.refreshToken) {
         sessionStorage.setItem("loomi_refresh_token", data.data.refreshToken);
       }
+
+      signInWithEmailAndPassword(auth, email, password).catch(() => {});
 
       await fetchUser();
       router.push("/dashboard");

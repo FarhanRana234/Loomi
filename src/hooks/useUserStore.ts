@@ -2,6 +2,8 @@
 
 import { create } from "zustand";
 import { fetchWithAuth } from "@/lib/fetch-with-auth";
+import { signOut } from "firebase/auth";
+import { auth } from "@/lib/firebase";
 
 export interface User {
   _id: string;
@@ -59,6 +61,7 @@ export const useUserStore = create<UserStore>((set) => ({
     } catch {
       // best-effort
     }
+    signOut(auth).catch(() => {});
     sessionStorage.clear();
     set({ user: null, isAuthenticated: false, isLoading: false });
     window.location.href = "/login";
