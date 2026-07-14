@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/select";
 import { X, Shield, ShieldCheck } from "lucide-react";
 import { z } from "zod";
+import { CategorySelector } from "@/components/features/CategorySelector";
 
 const CATEGORIES = [
   "Web Design",
@@ -26,7 +27,7 @@ const uploadSchema = z.object({
   title: z.string().min(1, "Title is required"),
   category: z.string().min(1, "Selecting a creative category is mandatory."),
   description: z.string().optional(),
-  tags: z.string().optional(),
+  projectCategories: z.array(z.string()).optional(),
 });
 
 export default function UploadPage() {
@@ -35,7 +36,7 @@ export default function UploadPage() {
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("");
   const [description, setDescription] = useState("");
-  const [tags, setTags] = useState("");
+  const [projectCategories, setProjectCategories] = useState<string[]>([]);
   const [isProtected, setIsProtected] = useState(false);
   const [isDownloadable, setIsDownloadable] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -72,7 +73,7 @@ export default function UploadPage() {
     e.preventDefault();
     setError("");
 
-    const validation = uploadSchema.safeParse({ title, category, description, tags });
+    const validation = uploadSchema.safeParse({ title, category, description, projectCategories });
     if (!validation.success) {
       setError(validation.error.errors[0].message);
       return;
@@ -118,10 +119,7 @@ export default function UploadPage() {
           title,
           category,
           description,
-          tags: tags
-            .split(",")
-            .map((t) => t.trim())
-            .filter(Boolean),
+          categories: projectCategories,
           cloudinaryPublicId: uploadData.public_id,
           mediaUrl: uploadData.secure_url,
           protected: isProtected,
@@ -270,13 +268,13 @@ export default function UploadPage() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">Tags</label>
-              <Input
-                value={tags}
-                onChange={(e) => setTags(e.target.value)}
-                placeholder="photography, portrait, editorial"
+              <label className="text-sm font-medium">Categories</label>
+              <CategorySelector
+                value={projectCategories}
+                onChange={setProjectCategories}
+                placeholder="Add categories..."
+                max={10}
               />
-              <p className="text-xs text-muted-foreground">Comma-separated</p>
             </div>
 
             <button

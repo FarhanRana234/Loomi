@@ -45,19 +45,27 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "12");
-    const tag = searchParams.get("tag");
+    const categoriesParam = searchParams.get("categories");
     const userId = searchParams.get("userId");
     const q = searchParams.get("q");
     const category = searchParams.get("category");
 
     const query: Record<string, unknown> = { status: "published" };
-    if (tag) query.tags = tag;
+    if (categoriesParam) {
+      const cats = categoriesParam.split(",").map((c) => c.trim().toLowerCase()).filter(Boolean);
+      if (cats.length === 1) {
+        query.categories = cats[0];
+      } else if (cats.length > 1) {
+        query.categories = { $in: cats };
+      }
+    } else if (category) {
+      query.categories = category.toLowerCase();
+    }
     if (userId) query.userId = userId;
-    if (category) query.category = category;
     if (q) {
       const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       const regex = new RegExp(escaped, "i");
-      query.$or = [{ title: regex }, { tags: regex }, { description: regex }];
+      query.$or = [{ title: regex }, { categories: regex }, { description: regex }];
     }
 
     const total = await Project.countDocuments(query);
@@ -108,7 +116,7 @@ export async function POST(request: NextRequest) {
       title,
       description,
       category,
-      tags,
+      categories,
       cloudinaryPublicId,
       mediaUrl,
       protected: isProtected,
@@ -126,7 +134,7 @@ export async function POST(request: NextRequest) {
       title: title.toLowerCase(),
       description: description || "",
       category: category || "General",
-      tags: (tags || []).map((t: string) => t.toLowerCase().trim()),
+      categories: (categories || []).map((c: string) => c.toLowerCase().trim()),
       cloudinaryPublicId,
       mediaUrl,
       userId: user._id,

@@ -20,7 +20,7 @@ export interface IProject {
   title: string;
   description: string;
   category: string;
-  tags: string[];
+  categories: string[];
   cloudinaryPublicId: string;
   mediaUrl: string;
   thumbnailUrl?: string;

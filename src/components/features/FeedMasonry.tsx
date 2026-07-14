@@ -39,7 +39,7 @@ function distributeToColumns<T>(items: T[], numColumns: number): T[][] {
 export function FeedMasonry() {
   const searchParams = useSearchParams();
   const q = searchParams.get("q") || "";
-  const tag = searchParams.get("tag") || "";
+  const categoriesParam = searchParams.get("categories") || "";
   const [projects, setProjects] = useState<IProject[]>([]);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
@@ -47,12 +47,12 @@ export function FeedMasonry() {
 
   const numColumns = useMediaColumns();
 
-  const fetchProjects = useCallback(async (pageNum: number, search: string, searchTag: string) => {
+  const fetchProjects = useCallback(async (pageNum: number, search: string, searchCategories: string) => {
     setLoading(true);
     try {
       const params = new URLSearchParams({ page: String(pageNum), limit: "12" });
       if (search) params.set("q", search);
-      if (searchTag) params.set("tag", searchTag);
+      if (searchCategories) params.set("categories", searchCategories);
       const res = await fetch(`/api/projects?${params}`);
       if (res.ok) {
         const data = await res.json();
@@ -71,8 +71,8 @@ export function FeedMasonry() {
 
   useEffect(() => {
     setPage(1);
-    fetchProjects(1, q, tag);
-  }, [q, tag, fetchProjects]);
+    fetchProjects(1, q, categoriesParam);
+  }, [q, categoriesParam, fetchProjects]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -83,7 +83,7 @@ export function FeedMasonry() {
       ) {
         setPage((p) => {
           const next = p + 1;
-          fetchProjects(next, q, tag);
+          fetchProjects(next, q, categoriesParam);
           return next;
         });
       }
@@ -91,7 +91,7 @@ export function FeedMasonry() {
 
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
-  }, [loading, hasMore, fetchProjects, q, tag]);
+  }, [loading, hasMore, fetchProjects, q, categoriesParam]);
 
   const columns = useMemo(
     () => distributeToColumns(projects, numColumns),
@@ -100,9 +100,20 @@ export function FeedMasonry() {
 
   return (
     <div>
-      {q && (
+      {(q || categoriesParam) && (
         <p className="mb-4 text-sm text-muted-foreground">
-          Showing results for &ldquo;{q}&rdquo;
+          {q && <>Showing results for &ldquo;{q}&rdquo;</>}
+          {q && categoriesParam && " in "}
+          {categoriesParam && (
+            <>
+              {categoriesParam.split(",").map((c) => c.trim()).filter(Boolean).map((cat, i) => (
+                <span key={cat}>
+                  {i > 0 && " + "}
+                  <span className="font-medium text-foreground">{cat}</span>
+                </span>
+              ))}
+            </>
+          )}
         </p>
       )}
 

@@ -4,7 +4,7 @@ export interface IProjectDocument extends Document {
   title: string;
   description: string;
   category: string;
-  tags: string[];
+  categories: string[];
   cloudinaryPublicId: string;
   mediaUrl: string;
   userId: mongoose.Types.ObjectId;
@@ -20,7 +20,7 @@ const ProjectSchema = new Schema<IProjectDocument>(
     title: { type: String, required: true },
     description: { type: String, default: "" },
     category: { type: String, required: true, default: "General" },
-    tags: { type: [String], default: [], index: true },
+    categories: { type: [String], default: [], index: true },
     cloudinaryPublicId: { type: String, required: true },
     mediaUrl: { type: String, required: true },
     userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
@@ -37,7 +37,7 @@ const ProjectSchema = new Schema<IProjectDocument>(
   { timestamps: true }
 );
 
-ProjectSchema.index({ title: "text", tags: "text" });
+ProjectSchema.index({ title: "text", categories: "text" });
 
 export default mongoose.models.Project ||
   mongoose.model<IProjectDocument>("Project", ProjectSchema);

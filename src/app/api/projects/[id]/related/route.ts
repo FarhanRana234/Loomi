@@ -38,7 +38,7 @@ export async function GET(
 
     await connectToDatabase();
 
-    const current = await Project.findById(id).select("tags title").lean<{ tags: string[]; title: string }>();
+    const current = await Project.findById(id).select("categories title").lean<{ categories: string[]; title: string }>();
     if (!current) {
       return NextResponse.json(
         { success: false, error: "Project not found" },
@@ -49,7 +49,7 @@ export async function GET(
     const related = await Project.find({
       _id: { $ne: id },
       status: "published",
-      tags: { $in: current.tags },
+      categories: { $in: current.categories },
     })
       .populate("userId", "username avatarUrl")
       .sort({ views: -1 })
