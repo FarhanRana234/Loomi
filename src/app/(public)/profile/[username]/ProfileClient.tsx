@@ -213,28 +213,30 @@ export default function ProfileClient({
               {moodboards.map((mb) => (
                 <div
                   key={mb._id}
-                  className="rounded-xl border border-border p-4"
+                  className="group overflow-hidden rounded-2xl bg-muted transition-shadow hover:shadow-md"
                 >
                   <Link href={`/moodboard/${mb._id}`} className="block">
                     <MoodboardThumbnail
                       images={mb.projects.map((p) => p.thumbnailUrl || p.mediaUrl)}
-                      className="aspect-square w-full"
+                      className="aspect-square w-full rounded-none"
                     />
                   </Link>
-                  <div className="mt-3 flex items-center justify-between">
-                    <Link href={`/moodboard/${mb._id}`} className="font-medium hover:underline">
-                      {mb.name}
-                    </Link>
-                    {mb.visibility === "private" && (
-                      <Badge variant="outline" className="gap-1 text-[10px]">
-                        <Lock className="h-3 w-3" />
-                        Private
-                      </Badge>
-                    )}
+                  <div className="px-4 py-3">
+                    <div className="flex items-center justify-between">
+                      <Link href={`/moodboard/${mb._id}`} className="text-sm font-medium hover:underline">
+                        {mb.name}
+                      </Link>
+                      {mb.visibility === "private" && (
+                        <Badge variant="outline" className="gap-1 text-[10px]">
+                          <Lock className="h-3 w-3" />
+                          Private
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      {mb.projects.length} project{mb.projects.length !== 1 && "s"}
+                    </p>
                   </div>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {mb.projects.length} project{mb.projects.length !== 1 && "s"}
-                  </p>
                 </div>
               ))}
             </div>
