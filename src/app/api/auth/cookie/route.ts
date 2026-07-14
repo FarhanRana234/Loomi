@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminAuth } from "@/lib/firebase-admin";
-import { connectToDatabase } from "@/lib/db";
 import { setSessionCookie } from "@/lib/session";
-import User from "@/models/User";
 
 export async function POST(request: NextRequest) {
   try {
@@ -18,24 +16,16 @@ export async function POST(request: NextRequest) {
 
     const decoded = await getAdminAuth().verifyIdToken(idToken);
 
-    await connectToDatabase();
-
-    let user = await User.findOne({ firebaseId: decoded.uid }).select("-__v");
-
-    if (!user) {
-      const email = decoded.email || "";
-      const username =
+    const { upsertUserByEmail } = await import("@/lib/user-sync");
+    const user = await upsertUserByEmail({
+      firebaseId: decoded.uid,
+      email: decoded.email || "",
+      username:
         decoded.name?.replace(/\s+/g, "").toLowerCase() ||
-        email.split("@")[0] ||
-        `user_${decoded.uid.slice(0, 8)}`;
-
-      user = await User.create({
-        firebaseId: decoded.uid,
-        email,
-        username,
-        avatarUrl: decoded.picture || "",
-      });
-    }
+        decoded.email?.split("@")[0] ||
+        `user_${decoded.uid.slice(0, 8)}`,
+      avatarUrl: decoded.picture || "",
+    });
 
     const response = NextResponse.json({
       success: true,

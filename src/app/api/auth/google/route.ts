@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminAuth } from "@/lib/firebase-admin";
-import { connectToDatabase } from "@/lib/db";
-import User from "@/models/User";
 
 const FIREBASE_API_KEY = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
 
@@ -47,24 +45,21 @@ export async function POST(request: NextRequest) {
 
     const decoded = await getAdminAuth().verifyIdToken(idToken);
 
-    await connectToDatabase();
+    const email = decoded.email || "";
+    const username =
+      decoded.name?.replace(/\s+/g, "").toLowerCase() ||
+      email.split("@")[0];
+    const avatarUrl = decoded.picture || "";
 
-    let user = await User.findOne({ firebaseId: decoded.uid });
+    const { upsertUserByEmail } = await import("@/lib/user-sync");
+    const user = await upsertUserByEmail({
+      firebaseId: decoded.uid,
+      email,
+      username,
+      avatarUrl,
+    });
 
-    if (!user) {
-      const email = decoded.email || "";
-      const username =
-        decoded.name?.replace(/\s+/g, "").toLowerCase() ||
-        email.split("@")[0];
-      const avatarUrl = decoded.picture || "";
-
-      user = await User.create({
-        firebaseId: decoded.uid,
-        email,
-        username,
-        avatarUrl,
-      });
-
+    if (user.createdAt.getTime() === user.updatedAt.getTime()) {
       try {
         const { getResend, FROM_EMAIL } = await import("@/lib/resend");
         await getResend().emails.send({

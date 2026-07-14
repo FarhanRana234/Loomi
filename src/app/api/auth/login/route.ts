@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminAuth } from "@/lib/firebase-admin";
-import { connectToDatabase } from "@/lib/db";
 import { setSessionCookie } from "@/lib/session";
-import User from "@/models/User";
 
 const FIREBASE_API_KEY = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
 
@@ -45,21 +43,14 @@ export async function POST(request: NextRequest) {
 
     const decoded = await getAdminAuth().verifyIdToken(idToken);
 
-    await connectToDatabase();
-    let user = await User.findOne({ firebaseId: decoded.uid }).select("-__v");
-
-    if (!user) {
-      user = await User.create({
-        firebaseId: decoded.uid,
-        email: decoded.email || email,
-        username: decoded.email?.split("@")[0] || email.split("@")[0],
-        avatarUrl: decoded.picture || "",
-        hasPassword: true,
-      });
-    } else if (!user.hasPassword) {
-      user.hasPassword = true;
-      await user.save();
-    }
+    const { upsertUserByEmail } = await import("@/lib/user-sync");
+    const user = await upsertUserByEmail({
+      firebaseId: decoded.uid,
+      email: decoded.email || email,
+      username: decoded.email?.split("@")[0] || email.split("@")[0],
+      avatarUrl: decoded.picture || "",
+      hasPassword: true,
+    });
 
     const response = NextResponse.json({
       success: true,
