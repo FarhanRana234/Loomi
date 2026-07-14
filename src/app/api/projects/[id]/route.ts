@@ -87,6 +87,75 @@ export async function GET(
   }
 }
 
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+
+    if (!isValidObjectId(id)) {
+      return NextResponse.json(
+        { success: false, error: "Invalid project ID" },
+        { status: 400 }
+      );
+    }
+
+    const decoded = await verifyRequest(request);
+    if (!decoded) {
+      return NextResponse.json(
+        { success: false, error: "Not authenticated" },
+        { status: 401 }
+      );
+    }
+
+    await connectToDatabase();
+
+    const currentUser = await User.findOne({ firebaseId: decoded.uid });
+    if (!currentUser) {
+      return NextResponse.json(
+        { success: false, error: "User not found" },
+        { status: 404 }
+      );
+    }
+
+    const project = await Project.findById(id);
+    if (!project) {
+      return NextResponse.json(
+        { success: false, error: "Project not found" },
+        { status: 404 }
+      );
+    }
+
+    const isOwner = project.userId.toString() === currentUser._id.toString();
+    if (!isOwner) {
+      return NextResponse.json(
+        { success: false, error: "Forbidden" },
+        { status: 403 }
+      );
+    }
+
+    const body = await request.json();
+    const allowed = ["isDownloadable", "title", "description", "category", "tags", "status"];
+    for (const key of allowed) {
+      if (key in body) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (project as any)[key] = body[key];
+      }
+    }
+
+    await project.save();
+
+    return NextResponse.json({ success: true, data: project });
+  } catch (error: unknown) {
+    console.error("PATCH /api/projects/[id] error:", error);
+    return NextResponse.json(
+      { success: false, error: "Failed to update project" },
+      { status: 500 }
+    );
+  }
+}
+
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }

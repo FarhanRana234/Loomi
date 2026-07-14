@@ -29,6 +29,7 @@ export interface IProject {
   views: number;
   status: "draft" | "published" | "flagged";
   protected: boolean;
+  isDownloadable: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -47,6 +48,16 @@ export interface ISubscriber {
   _id: string;
   email: string;
   subscribedAt: Date;
+}
+
+export interface IComment {
+  _id: string;
+  projectId: string;
+  userId: IUser;
+  text: string;
+  parentId: string | null;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface ApiResponse<T = unknown> {

@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useTransition } from "react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Eye, Heart, FolderOpen, Plus, Trash2 } from "lucide-react";
+import { Eye, Heart, FolderOpen, Plus, Trash2, Download } from "lucide-react";
 import { toast } from "sonner";
 import { AnalyticsChart } from "@/components/features/AnalyticsChart";
 import { useUserStore } from "@/hooks/useUserStore";
@@ -53,6 +53,25 @@ export default function DashboardPage() {
         toast.error(err instanceof Error ? err.message : "Delete failed");
       }
     });
+  };
+
+  const handleToggleDownload = async (projectId: string, currentValue: boolean) => {
+    try {
+      const res = await fetch(`/api/projects/${projectId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isDownloadable: !currentValue }),
+      });
+      if (!res.ok) throw new Error("Failed to update");
+      setProjects((prev) =>
+        prev.map((p) =>
+          p._id === projectId ? { ...p, isDownloadable: !currentValue } : p
+        )
+      );
+      toast.success(!currentValue ? "Downloads enabled" : "Downloads disabled");
+    } catch {
+      toast.error("Failed to update download setting");
+    }
   };
 
   const chartData = projects.slice(0, 7).map((p) => ({
@@ -170,6 +189,17 @@ export default function DashboardPage() {
                   <span className="rounded-full bg-muted px-2 py-0.5 text-xs">
                     {project.status}
                   </span>
+                  <button
+                    onClick={() => handleToggleDownload(project._id, !!(project as unknown as { isDownloadable?: boolean }).isDownloadable)}
+                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors ${
+                      (project as unknown as { isDownloadable?: boolean }).isDownloadable
+                        ? "text-green-500 hover:bg-green-500/10"
+                        : "text-muted-foreground hover:bg-muted"
+                    }`}
+                    title={(project as unknown as { isDownloadable?: boolean }).isDownloadable ? "Downloads enabled" : "Downloads disabled"}
+                  >
+                    <Download className="h-4 w-4" />
+                  </button>
                   <Button
                     variant="ghost"
                     size="icon"

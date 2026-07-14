@@ -37,6 +37,7 @@ export default function UploadPage() {
   const [description, setDescription] = useState("");
   const [tags, setTags] = useState("");
   const [isProtected, setIsProtected] = useState(false);
+  const [isDownloadable, setIsDownloadable] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState("");
@@ -124,6 +125,7 @@ export default function UploadPage() {
           cloudinaryPublicId: uploadData.public_id,
           mediaUrl: uploadData.secure_url,
           protected: isProtected,
+          isDownloadable,
         }),
       });
 
@@ -307,6 +309,32 @@ export default function UploadPage() {
                     isProtected ? "translate-x-4" : "translate-x-0"
                   }`}
                 />
+              </div>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setIsDownloadable(!isDownloadable)}
+              className={`flex w-full items-center gap-3 rounded-xl border p-4 text-left transition-colors ${
+                isDownloadable
+                  ? "border-green-500/50 bg-green-500/5"
+                  : "border-border hover:border-foreground/20"
+              }`}
+            >
+              <div className={`h-5 w-5 shrink-0 rounded-md border-2 flex items-center justify-center transition-colors ${
+                isDownloadable ? "border-green-500 bg-green-500" : "border-muted-foreground"
+              }`}>
+                {isDownloadable && (
+                  <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                )}
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-medium">Allow Downloads</p>
+                <p className="text-xs text-muted-foreground">
+                  Let visitors download the original file
+                </p>
               </div>
             </button>
 

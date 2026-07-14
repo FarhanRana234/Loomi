@@ -19,6 +19,8 @@ import {
 import { cn } from "@/lib/utils";
 import { useUserStore } from "@/hooks/useUserStore";
 import { ProjectCard } from "@/components/features/ProjectCard";
+import { DownloadButton } from "@/components/features/DownloadButton";
+import { CommentSection } from "@/components/features/CommentSection";
 import type { IProject } from "@/types";
 
 interface MoodboardMini {
@@ -248,7 +250,7 @@ export default function ProjectDetailPage() {
             </div>
           )}
 
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-3">
             <Button
               variant={liked ? "default" : "outline"}
               className={cn(liked && "bg-foreground text-background")}
@@ -263,6 +265,11 @@ export default function ProjectDetailPage() {
               <Share2 className="mr-2 h-4 w-4" />
               Share
             </Button>
+            <DownloadButton
+              url={project.mediaUrl}
+              filename={`${project.title}.${project.mediaUrl.includes("video") ? "mp4" : "jpg"}`}
+              isDownloadable={!!(project as unknown as { isDownloadable?: boolean }).isDownloadable}
+            />
             {user && !isOwner && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -313,6 +320,8 @@ export default function ProjectDetailPage() {
               {project.views} views
             </p>
           </div>
+
+          <CommentSection projectId={project._id} />
         </div>
       </div>
 

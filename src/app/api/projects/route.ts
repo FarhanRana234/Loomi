@@ -112,6 +112,7 @@ export async function POST(request: NextRequest) {
       cloudinaryPublicId,
       mediaUrl,
       protected: isProtected,
+      isDownloadable,
     } = body;
 
     if (!title || !cloudinaryPublicId || !mediaUrl) {
@@ -130,6 +131,7 @@ export async function POST(request: NextRequest) {
       mediaUrl,
       userId: user._id,
       protected: !!isProtected,
+      isDownloadable: !!isDownloadable,
     });
 
     return NextResponse.json({ success: true, data: project }, { status: 201 });

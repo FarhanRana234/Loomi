@@ -12,6 +12,7 @@ export interface IProjectDocument extends Document {
   views: number;
   status: "draft" | "published" | "flagged";
   protected: boolean;
+  isDownloadable: boolean;
 }
 
 const ProjectSchema = new Schema<IProjectDocument>(
@@ -31,6 +32,7 @@ const ProjectSchema = new Schema<IProjectDocument>(
       default: "published",
     },
     protected: { type: Boolean, default: false },
+    isDownloadable: { type: Boolean, default: false },
   },
   { timestamps: true }
 );
