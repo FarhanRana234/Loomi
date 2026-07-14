@@ -23,9 +23,10 @@ interface CommentItemProps {
   children?: IComment[];
   depth?: number;
   onDelete?: (id: string) => void;
+  onReplyAdded?: (comment: IComment) => void;
 }
 
-export function CommentItem({ comment, children = [], depth = 0, onDelete }: CommentItemProps) {
+export function CommentItem({ comment, children = [], depth = 0, onDelete, onReplyAdded }: CommentItemProps) {
   const user = useUserStore((s) => s.user);
   const [open, setOpen] = useState(false);
   const [replyOpen, setReplyOpen] = useState(false);
@@ -75,6 +76,8 @@ export function CommentItem({ comment, children = [], depth = 0, onDelete }: Com
         body: JSON.stringify({ projectId: (comment as unknown as { projectId: string }).projectId, text: replyText.trim(), parentId: comment._id }),
       });
       if (!res.ok) throw new Error();
+      const d = await res.json();
+      if (d.success) onReplyAdded?.(d.data);
       toast.success("Reply sent");
       setReplyText("");
       setReplyOpen(false);
@@ -177,6 +180,7 @@ export function CommentItem({ comment, children = [], depth = 0, onDelete }: Com
               comment={child}
               depth={depth + 1}
               onDelete={onDelete}
+              onReplyAdded={onReplyAdded}
             />
           ))}
         </div>

@@ -50,6 +50,10 @@ export function CommentSection({ projectId }: CommentSectionProps) {
     setComments((prev) => prev.filter((c) => c._id !== id));
   };
 
+  const handleReplyAdded = (comment: IComment) => {
+    setComments((prev) => [...prev, comment]);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!text.trim() || sending) return;
@@ -111,6 +115,7 @@ export function CommentSection({ projectId }: CommentSectionProps) {
             children={comment.children}
             depth={0}
             onDelete={handleDelete}
+            onReplyAdded={handleReplyAdded}
           />
         ))}
       </div>
