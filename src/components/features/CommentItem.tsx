@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import Link from "next/link";
 import { Send, MoreHorizontal, Trash2, Flag } from "lucide-react";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -87,16 +88,18 @@ export function CommentItem({ comment, children = [], depth = 0, onDelete }: Com
   return (
     <div>
       <div className={`group flex gap-3 ${depth > 0 ? "pl-4" : ""}`}>
-        <Avatar className="h-8 w-8 shrink-0">
-          <AvatarImage src={author?.avatarUrl} />
-          <AvatarFallback className="text-xs">
-            {author?.username?.slice(0, 2).toUpperCase()}
-          </AvatarFallback>
-        </Avatar>
+        <Link href={`/profile/${author?.username}`} className="shrink-0">
+          <Avatar className="h-8 w-8">
+            <AvatarImage src={author?.avatarUrl} />
+            <AvatarFallback className="text-xs">
+              {author?.username?.slice(0, 2).toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
+        </Link>
 
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <span className="text-sm font-medium">{author?.username}</span>
+            <Link href={`/profile/${author?.username}`} className="text-sm font-medium hover:underline">{author?.username}</Link>
             <span className="text-xs text-muted-foreground">
               {timeAgo(comment.createdAt)}
             </span>
