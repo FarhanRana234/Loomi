@@ -49,7 +49,7 @@ export async function GET(
     const related = await Project.find({
       _id: { $ne: id },
       status: "published",
-      categories: { $in: current.categories },
+      categories: { $in: current.categories || [] },
     })
       .populate("userId", "username avatarUrl")
       .sort({ views: -1 })

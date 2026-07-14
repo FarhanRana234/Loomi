@@ -76,7 +76,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
 
       <div className="flex items-center justify-between p-3">
         <div className="flex flex-wrap gap-1">
-          {project.categories.slice(0, 2).map((cat) => (
+          {(project.categories || []).slice(0, 2).map((cat) => (
             <Link
               key={cat}
               href={`/?categories=${encodeURIComponent(cat)}`}

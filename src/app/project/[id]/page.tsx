@@ -240,9 +240,9 @@ export default function ProjectDetailPage() {
             </p>
           )}
 
-          {project.categories.length > 0 && (
+          {(project.categories || []).length > 0 && (
             <div className="flex flex-wrap gap-2">
-              {project.categories.map((cat) => (
+              {(project.categories || []).map((cat) => (
                 <Link key={cat} href={`/?categories=${encodeURIComponent(cat)}`}>
                   <Badge variant="outline" className="transition-colors hover:bg-accent">
                     {cat}
