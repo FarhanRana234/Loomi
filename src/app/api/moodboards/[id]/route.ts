@@ -37,7 +37,51 @@ async function getAuthUid(): Promise<string | null> {
   }
 }
 
-const POPULATE_FIELDS = "title mediaUrl cloudinaryPublicId protected userId likes";
+const POPULATE_FIELDS = "title mediaUrl cloudinaryPublicId protected userId likes views";
+const POPULATE_USER = "username";
+
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    await connectToDatabase();
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const moodboard: any = await Moodboard.findById(id)
+      .populate("projects", POPULATE_FIELDS)
+      .lean();
+
+    if (!moodboard) {
+      return NextResponse.json(
+        { success: false, error: "Moodboard not found" },
+        { status: 404 }
+      );
+    }
+
+    if (moodboard.visibility === "private") {
+      const uid = await getAuthUid();
+      if (uid !== moodboard.userId) {
+        return NextResponse.json(
+          { success: false, error: "This moodboard is private" },
+          { status: 403 }
+        );
+      }
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: enrichMoodboardProjects(moodboard),
+    });
+  } catch (error) {
+    console.error("GET /api/moodboards/[id] error:", error);
+    return NextResponse.json(
+      { success: false, error: "Failed to fetch moodboard" },
+      { status: 500 }
+    );
+  }
+}
 
 export async function PATCH(
   request: NextRequest,

@@ -5,26 +5,8 @@ import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { ProjectCard } from "./ProjectCard";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useMediaColumns } from "@/hooks/useMediaColumns";
 import type { IProject } from "@/types";
-
-function useMediaColumns() {
-  const [columns, setColumns] = useState(4);
-
-  useEffect(() => {
-    function update() {
-      const w = window.innerWidth;
-      if (w >= 1280) setColumns(4);
-      else if (w >= 1024) setColumns(3);
-      else if (w >= 640) setColumns(2);
-      else setColumns(1);
-    }
-    update();
-    window.addEventListener("resize", update);
-    return () => window.removeEventListener("resize", update);
-  }, []);
-
-  return columns;
-}
 
 function distributeToColumns<T>(items: T[], numColumns: number): T[][] {
   const columns: T[][] = Array.from({ length: numColumns }, () => []);

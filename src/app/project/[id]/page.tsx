@@ -1,32 +1,21 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { Heart, Share2, ArrowLeft, BookmarkPlus, Plus, FolderOpen } from "lucide-react";
+import { Heart, Share2, ArrowLeft, BookmarkPlus } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { useUserStore } from "@/hooks/useUserStore";
 import { ProjectCard } from "@/components/features/ProjectCard";
 import { DownloadButton } from "@/components/features/DownloadButton";
 import { CommentSection } from "@/components/features/CommentSection";
+import { MoodboardSelectModal } from "@/components/features/MoodboardSelectModal";
 import type { IProject } from "@/types";
-
-interface MoodboardMini {
-  _id: string;
-  name: string;
-}
 
 export default function ProjectDetailPage() {
   const params = useParams();
@@ -36,8 +25,6 @@ export default function ProjectDetailPage() {
   const [loading, setLoading] = useState(true);
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
-
-  const [moodboards, setMoodboards] = useState<MoodboardMini[]>([]);
 
   useEffect(() => {
     fetch(`/api/projects/${params.id}`)
@@ -64,37 +51,7 @@ export default function ProjectDetailPage() {
     }
   }, [params.id, project]);
 
-  const fetchMoodboards = useCallback(async () => {
-    if (!user) return;
-    try {
-      const res = await fetch("/api/moodboards");
-      if (res.ok) {
-        const d = await res.json();
-        if (d.success) setMoodboards(d.data || []);
-      }
-    } catch { /* silent */ }
-  }, [user]);
-
-  useEffect(() => {
-    fetchMoodboards();
-  }, [fetchMoodboards]);
-
-  const handleSaveToMoodboard = async (moodboardId: string) => {
-    try {
-      const res = await fetch(`/api/moodboards/${moodboardId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "add", projectId: project?._id }),
-      });
-      if (res.ok) {
-        toast.success("Saved to moodboard");
-      } else {
-        toast.error("Failed to save");
-      }
-    } catch {
-      toast.error("Failed to save");
-    }
-  };
+  const [saveModalOpen, setSaveModalOpen] = useState(false);
 
   const handleLike = () => {
     if (!user) {
@@ -273,39 +230,10 @@ export default function ProjectDetailPage() {
               isDownloadable={!!(project as unknown as { isDownloadable?: boolean }).isDownloadable}
             />
             {user && !isOwner && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline">
-                    <BookmarkPlus className="mr-2 h-4 w-4" />
-                    Save
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  {moodboards.length === 0 ? (
-                    <DropdownMenuItem disabled className="text-muted-foreground">
-                      <FolderOpen className="mr-2 h-4 w-4" />
-                      No moodboards yet
-                    </DropdownMenuItem>
-                  ) : (
-                    moodboards.map((mb) => (
-                      <DropdownMenuItem
-                        key={mb._id}
-                        onClick={() => handleSaveToMoodboard(mb._id)}
-                      >
-                        <FolderOpen className="mr-2 h-4 w-4" />
-                        {mb.name}
-                      </DropdownMenuItem>
-                    ))
-                  )}
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link href={`/profile/${user.username}`}>
-                      <Plus className="mr-2 h-4 w-4" />
-                      Manage moodboards
-                    </Link>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <Button variant="outline" onClick={() => setSaveModalOpen(true)}>
+                <BookmarkPlus className="mr-2 h-4 w-4" />
+                Save
+              </Button>
             )}
           </div>
 
@@ -338,6 +266,14 @@ export default function ProjectDetailPage() {
             ))}
           </div>
         </div>
+      )}
+
+      {project && (
+        <MoodboardSelectModal
+          open={saveModalOpen}
+          onOpenChange={setSaveModalOpen}
+          projectId={project._id}
+        />
       )}
     </div>
   );

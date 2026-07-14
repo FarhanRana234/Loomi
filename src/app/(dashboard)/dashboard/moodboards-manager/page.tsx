@@ -14,6 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { MoodboardThumbnail } from "@/components/features/MoodboardThumbnail";
 
 interface MoodboardProject {
   _id: string;
@@ -289,24 +290,35 @@ export default function MoodboardsManagerPage() {
                     Empty — save projects from their detail page.
                   </p>
                 ) : (
-                  <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6">
-                    {mb.projects.map((p) => (
-                      <div key={p._id} className="group relative">
-                        <img
-                          src={p.thumbnailUrl || p.mediaUrl}
-                          alt={p.title}
-                          className="aspect-square w-full rounded-lg object-cover"
-                          loading="lazy"
-                        />
-                        <button
-                          className="absolute -right-1.5 -top-1.5 hidden h-5 w-5 items-center justify-center rounded-full bg-destructive text-destructive-foreground group-hover:flex"
-                          disabled={isPending}
-                          onClick={() => handleRemoveProject(mb._id, p._id)}
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </div>
-                    ))}
+                  <div className="space-y-3">
+                    <a
+                      href={`/moodboard/${mb._id}`}
+                      className="block"
+                    >
+                      <MoodboardThumbnail
+                        images={mb.projects.map((p) => p.thumbnailUrl || p.mediaUrl)}
+                        className="aspect-square w-full max-w-xs"
+                      />
+                    </a>
+                    <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6">
+                      {mb.projects.map((p) => (
+                        <div key={p._id} className="group relative">
+                          <img
+                            src={p.thumbnailUrl || p.mediaUrl}
+                            alt={p.title}
+                            className="aspect-square w-full rounded-lg object-cover"
+                            loading="lazy"
+                          />
+                          <button
+                            className="absolute -right-1.5 -top-1.5 hidden h-5 w-5 items-center justify-center rounded-full bg-destructive text-destructive-foreground group-hover:flex"
+                            disabled={isPending}
+                            onClick={() => handleRemoveProject(mb._id, p._id)}
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>

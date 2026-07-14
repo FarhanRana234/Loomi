@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Grid3X3, FolderOpen, Lock, ExternalLink, Settings } from "lucide-react";
 import FollowButton from "@/components/features/FollowButton";
 import FollowersFollowingDialog from "@/components/features/FollowersFollowingDialog";
+import { MoodboardThumbnail } from "@/components/features/MoodboardThumbnail";
 
 interface ProfileUser {
   _id: string;
@@ -214,8 +215,16 @@ export default function ProfileClient({
                   key={mb._id}
                   className="rounded-xl border border-border p-4"
                 >
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-medium">{mb.name}</h3>
+                  <Link href={`/moodboard/${mb._id}`} className="block">
+                    <MoodboardThumbnail
+                      images={mb.projects.map((p) => p.thumbnailUrl || p.mediaUrl)}
+                      className="aspect-square w-full"
+                    />
+                  </Link>
+                  <div className="mt-3 flex items-center justify-between">
+                    <Link href={`/moodboard/${mb._id}`} className="font-medium hover:underline">
+                      {mb.name}
+                    </Link>
                     {mb.visibility === "private" && (
                       <Badge variant="outline" className="gap-1 text-[10px]">
                         <Lock className="h-3 w-3" />
@@ -223,28 +232,9 @@ export default function ProfileClient({
                       </Badge>
                     )}
                   </div>
-                  {mb.projects.length === 0 ? (
-                    <p className="mt-3 text-xs text-muted-foreground">
-                      Empty board
-                    </p>
-                  ) : (
-                    <div className="mt-3 grid grid-cols-3 gap-1">
-                      {mb.projects.slice(0, 6).map((p) => (
-                        <Link
-                          key={p._id}
-                          href={`/project/${p._id}`}
-                          className="aspect-square overflow-hidden rounded-md"
-                        >
-                          <img
-                            src={p.thumbnailUrl || p.mediaUrl}
-                            alt={p.title}
-                            className="h-full w-full object-cover"
-                            loading="lazy"
-                          />
-                        </Link>
-                      ))}
-                    </div>
-                  )}
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {mb.projects.length} project{mb.projects.length !== 1 && "s"}
+                  </p>
                 </div>
               ))}
             </div>
