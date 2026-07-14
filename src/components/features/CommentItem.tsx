@@ -1,142 +1,170 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
-import { MessageCircle, Trash2 } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { Send, MoreHorizontal, Trash2, Flag } from "lucide-react";
+import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ReplyInput } from "./ReplyInput";
-import type { IComment, IUser } from "@/types";
+import { useUserStore } from "@/hooks/useUserStore";
+import type { IComment } from "@/types";
 
 interface CommentItemProps {
-  comment: IComment & { userId: IUser };
-  replies: (IComment & { userId: IUser })[];
-  currentUserId?: string;
-  onReply: (parentId: string, text: string) => Promise<void>;
-  onDelete: (commentId: string) => void;
+  comment: IComment;
+  children?: IComment[];
+  depth?: number;
+  onDelete?: (id: string) => void;
 }
 
-function timeAgo(date: Date): string {
-  const seconds = Math.floor((Date.now() - new Date(date).getTime()) / 1000);
-  if (seconds < 60) return "just now";
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  if (days < 30) return `${days}d ago`;
-  const months = Math.floor(days / 30);
-  return `${months}mo ago`;
-}
+export function CommentItem({ comment, children = [], depth = 0, onDelete }: CommentItemProps) {
+  const user = useUserStore((s) => s.user);
+  const [open, setOpen] = useState(false);
+  const [replyOpen, setReplyOpen] = useState(false);
+  const [replyText, setReplyText] = useState("");
+  const [sending, setSending] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
-export function CommentItem({
-  comment,
-  replies,
-  currentUserId,
-  onReply,
-  onDelete,
-}: CommentItemProps) {
-  const [showReplyInput, setShowReplyInput] = useState(false);
   const author = comment.userId as unknown as { username: string; avatarUrl: string };
-  const isOwner = currentUserId === (comment.userId as unknown as { firebaseId: string })?.firebaseId;
+  const isOwner = user?.firebaseId === (comment.userId as unknown as { firebaseId: string })?.firebaseId;
+  const canReply = depth < 2;
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  const handleDelete = async () => {
+    setOpen(false);
+    try {
+      const res = await fetch(`/api/comments/${comment._id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error();
+      toast.success("Comment deleted");
+      onDelete?.(comment._id);
+    } catch {
+      toast.error("Failed to delete comment");
+    }
+  };
+
+  const handleReport = () => {
+    setOpen(false);
+    toast.success("Report submitted");
+  };
+
+  const handleReply = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!replyText.trim() || sending) return;
+    setSending(true);
+    try {
+      const res = await fetch("/api/comments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ projectId: (comment as unknown as { projectId: string }).projectId, text: replyText.trim(), parentId: comment._id }),
+      });
+      if (!res.ok) throw new Error();
+      toast.success("Reply sent");
+      setReplyText("");
+      setReplyOpen(false);
+    } catch {
+      toast.error("Failed to send reply");
+    } finally {
+      setSending(false);
+    }
+  };
 
   return (
     <div>
-      <div className="flex gap-3">
-        <Link href={`/profile/${author.username}`}>
-          <Avatar className="h-8 w-8 shrink-0">
-            <AvatarImage src={author.avatarUrl} alt={author.username} />
-            <AvatarFallback className="text-[10px]">
-              {author.username?.slice(0, 2).toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
-        </Link>
-        <div className="flex-1 min-w-0">
+      <div className={`group flex gap-3 ${depth > 0 ? "pl-4" : ""}`}>
+        <Avatar className="h-8 w-8 shrink-0">
+          <AvatarImage src={author?.avatarUrl} />
+          <AvatarFallback className="text-xs">
+            {author?.username?.slice(0, 2).toUpperCase()}
+          </AvatarFallback>
+        </Avatar>
+
+        <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <Link
-              href={`/profile/${author.username}`}
-              className="text-sm font-medium hover:underline"
-            >
-              {author.username}
-            </Link>
+            <span className="text-sm font-medium">{author?.username}</span>
             <span className="text-xs text-muted-foreground">
-              {timeAgo(comment.createdAt)}
+              {new Date(comment.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
             </span>
           </div>
-          <p className="mt-0.5 text-sm leading-relaxed">{comment.text}</p>
-          <div className="mt-1 flex items-center gap-3">
-            {currentUserId && (
+          <p className="mt-0.5 text-sm leading-relaxed text-foreground">{comment.text}</p>
+
+          <div className="mt-1.5 flex items-center gap-3">
+            {canReply && user && (
               <button
-                onClick={() => setShowReplyInput(!showReplyInput)}
-                className="flex min-h-[44px] min-w-[44px] items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+                onClick={() => setReplyOpen(!replyOpen)}
+                className="text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
               >
-                <MessageCircle className="h-3.5 w-3.5" />
                 Reply
               </button>
             )}
-            {isOwner && (
-              <button
-                onClick={() => onDelete(comment._id)}
-                className="flex min-h-[44px] min-w-[44px] items-center gap-1 text-xs text-muted-foreground hover:text-destructive"
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </button>
-            )}
           </div>
+
+          {replyOpen && (
+            <form onSubmit={handleReply} className="mt-2 flex gap-2">
+              <input
+                type="text"
+                value={replyText}
+                onChange={(e) => setReplyText(e.target.value)}
+                placeholder={`Reply to ${author?.username}...`}
+                maxLength={1000}
+                autoFocus
+                className="flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring"
+              />
+              <button
+                type="submit"
+                disabled={!replyText.trim() || sending}
+                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-foreground text-background transition-opacity hover:opacity-90 disabled:opacity-40"
+              >
+                <Send className="h-3.5 w-3.5" />
+              </button>
+            </form>
+          )}
+        </div>
+
+        <div className="relative shrink-0" ref={menuRef}>
+          <button
+            onClick={() => setOpen(!open)}
+            className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:bg-accent hover:text-foreground"
+          >
+            <MoreHorizontal className="h-4 w-4" />
+          </button>
+          {open && (
+            <div className="absolute right-0 top-full z-50 mt-1 w-36 overflow-hidden rounded-lg border border-border bg-background shadow-md">
+              {isOwner && (
+                <button
+                  onClick={handleDelete}
+                  className="flex w-full items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  Delete
+                </button>
+              )}
+              <button
+                onClick={handleReport}
+                className="flex w-full items-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:bg-accent"
+              >
+                <Flag className="h-3.5 w-3.5" />
+                Report
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
-      {showReplyInput && (
-        <div className="ml-11 mt-2">
-          <ReplyInput
-            onSubmit={async (text) => {
-              await onReply(comment._id, text);
-              setShowReplyInput(false);
-            }}
-            onCancel={() => setShowReplyInput(false)}
-          />
-        </div>
-      )}
-
-      {replies.length > 0 && (
-        <div className="ml-11 mt-3 space-y-3 border-l-2 border-border pl-4">
-          {replies.map((reply) => {
-            const rAuthor = reply.userId as unknown as { username: string; avatarUrl: string };
-            const rIsOwner = currentUserId === (reply.userId as unknown as { firebaseId: string })?.firebaseId;
-            return (
-              <div key={reply._id} className="flex gap-3">
-                <Link href={`/profile/${rAuthor.username}`}>
-                  <Avatar className="h-6 w-6 shrink-0">
-                    <AvatarImage src={rAuthor.avatarUrl} alt={rAuthor.username} />
-                    <AvatarFallback className="text-[9px]">
-                      {rAuthor.username?.slice(0, 2).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                </Link>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <Link
-                      href={`/profile/${rAuthor.username}`}
-                      className="text-sm font-medium hover:underline"
-                    >
-                      {rAuthor.username}
-                    </Link>
-                    <span className="text-xs text-muted-foreground">
-                      {timeAgo(reply.createdAt)}
-                    </span>
-                  </div>
-                  <p className="mt-0.5 text-sm leading-relaxed">{reply.text}</p>
-                  {rIsOwner && (
-                    <button
-                      onClick={() => onDelete(reply._id)}
-                      className="mt-1 flex min-h-[44px] min-w-[44px] items-center gap-1 text-xs text-muted-foreground hover:text-destructive"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+      {children.length > 0 && (
+        <div className={`mt-2 space-y-3 ${depth > 0 ? "pl-4" : "ml-11"}`}>
+          {children.map((child) => (
+            <CommentItem
+              key={child._id}
+              comment={child}
+              depth={depth + 1}
+              onDelete={onDelete}
+            />
+          ))}
         </div>
       )}
     </div>
