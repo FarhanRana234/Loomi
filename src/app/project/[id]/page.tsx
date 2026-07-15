@@ -56,7 +56,20 @@ export default function ProjectDetailPage() {
   }, [params.id, project]);
 
   const [carouselApi, setCarouselApi] = useState<EmblaCarouselType | null>(null);
+  const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const [saveModalOpen, setSaveModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (!carouselApi) return;
+    const onSelect = () => setCurrentSlideIndex(carouselApi.selectedScrollSnap());
+    onSelect();
+    carouselApi.on("select", onSelect);
+    carouselApi.on("reInit", onSelect);
+    return () => {
+      carouselApi.off("select", onSelect);
+      carouselApi.off("reInit", onSelect);
+    };
+  }, [carouselApi]);
 
   const handleLike = () => {
     if (!user) {
@@ -131,6 +144,7 @@ export default function ProjectDetailPage() {
 
   const isProtected = (project as unknown as { protected?: boolean }).protected;
   const images = project.images || [];
+  const signedImageUrls = (project as unknown as { signedImageUrls?: string[] }).signedImageUrls;
   const hasMultipleImages = images.length > 1;
   const isVideo = project.mediaType === "video" || (!project.mediaType && images.length === 0 && /\.(mp4|webm|mov)(\?|$)/i.test(project.mediaUrl));
   const isImage = !isVideo;
@@ -263,7 +277,9 @@ export default function ProjectDetailPage() {
               Share
             </Button>
             <DownloadButton
-              url={project.mediaUrl}
+              url={hasMultipleImages
+                ? (signedImageUrls?.[currentSlideIndex] || images[currentSlideIndex] || project.mediaUrl)
+                : project.mediaUrl}
               filename={`${project.title}.${isVideo ? "mp4" : "jpg"}`}
               isDownloadable={!!(project as unknown as { isDownloadable?: boolean }).isDownloadable}
             />
