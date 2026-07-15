@@ -15,7 +15,8 @@ import { ProjectCard } from "@/components/features/ProjectCard";
 import { DownloadButton } from "@/components/features/DownloadButton";
 import { CommentSection } from "@/components/features/CommentSection";
 import { MoodboardSelectModal } from "@/components/features/MoodboardSelectModal";
-import { ImageCarousel } from "@/components/features/ImageCarousel";
+import { ImageCarousel, PaginationDots } from "@/components/features/ImageCarousel";
+import type { EmblaCarouselType } from "embla-carousel";
 import { VideoPlayer } from "@/components/features/VideoPlayer";
 import { SoundtrackChip } from "@/components/features/SoundtrackChip";
 import type { IProject } from "@/types";
@@ -54,6 +55,7 @@ export default function ProjectDetailPage() {
     }
   }, [params.id, project]);
 
+  const [carouselApi, setCarouselApi] = useState<EmblaCarouselType | null>(null);
   const [saveModalOpen, setSaveModalOpen] = useState(false);
 
   const handleLike = () => {
@@ -154,13 +156,14 @@ export default function ProjectDetailPage() {
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-5">
         <div className="lg:col-span-3">
-          <div className="relative">
+          <div>
             {hasMultipleImages ? (
               <ImageCarousel
                 images={images}
                 protectedImages={(project as unknown as { signedImageUrls?: string[] }).signedImageUrls}
                 alt={project.title}
                 variant="detail"
+                onEmblaApi={setCarouselApi}
               />
             ) : isVideo ? (
               <VideoPlayer
@@ -175,6 +178,10 @@ export default function ProjectDetailPage() {
                 className="w-full rounded-xl object-cover"
                 onContextMenu={(e) => isProtected && e.preventDefault()}
               />
+            )}
+
+            {hasMultipleImages && (
+              <PaginationDots emblaApi={carouselApi} count={images.length} variant="detail" />
             )}
 
             {hasSoundtrack && isImage && (

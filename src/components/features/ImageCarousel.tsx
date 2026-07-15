@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import type { EmblaCarouselType } from "embla-carousel";
 import useEmblaCarousel from "embla-carousel-react";
 import Autoplay from "embla-carousel-autoplay";
 import { cn } from "@/lib/utils";
@@ -11,6 +12,7 @@ interface ImageCarouselProps {
   className?: string;
   protectedImages?: string[];
   variant?: "feed" | "detail";
+  onEmblaApi?: (api: EmblaCarouselType | null) => void;
 }
 
 export function ImageCarousel({
@@ -19,6 +21,7 @@ export function ImageCarousel({
   className,
   protectedImages,
   variant = "feed",
+  onEmblaApi,
 }: ImageCarouselProps) {
   const [emblaRef, emblaApi] = useEmblaCarousel(
     { loop: images.length > 1, dragFree: false },
@@ -27,6 +30,10 @@ export function ImageCarousel({
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [canScrollPrev, setCanScrollPrev] = useState(false);
   const [canScrollNext, setCanScrollNext] = useState(false);
+
+  useEffect(() => {
+    onEmblaApi?.(emblaApi ?? null);
+  }, [emblaApi, onEmblaApi]);
 
   const scrollPrev = useCallback(() => emblaApi?.scrollPrev(), [emblaApi]);
   const scrollNext = useCallback(() => emblaApi?.scrollNext(), [emblaApi]);
@@ -106,33 +113,59 @@ export function ImageCarousel({
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
             </svg>
           </button>
-
-          <div
-            className={cn(
-              "absolute bottom-3 left-1/2 z-10 flex -translate-x-1/2 gap-1.5",
-            )}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {displayImages.map((_, idx) => (
-              <button
-                key={idx}
-                onClick={() => emblaApi?.scrollTo(idx)}
-                className={cn(
-                  "h-1.5 rounded-full transition-all duration-300",
-                  isDetail
-                    ? idx === selectedIndex
-                      ? "w-5 bg-white"
-                      : "w-1.5 bg-white/50"
-                    : idx === selectedIndex
-                      ? "w-5 bg-foreground/80"
-                      : "w-1.5 bg-foreground/30"
-                )}
-                aria-label={`Go to image ${idx + 1}`}
-              />
-            ))}
-          </div>
         </>
       )}
+    </div>
+  );
+}
+
+interface PaginationDotsProps {
+  emblaApi: EmblaCarouselType | null;
+  count: number;
+  variant?: "feed" | "detail";
+}
+
+export function PaginationDots({ emblaApi, count, variant = "feed" }: PaginationDotsProps) {
+  const [selectedIndex, setSelectedIndex] = useState(0);
+
+  useEffect(() => {
+    if (!emblaApi) return;
+    const onSelect = () => setSelectedIndex(emblaApi.selectedScrollSnap());
+    onSelect();
+    emblaApi.on("select", onSelect);
+    emblaApi.on("reInit", onSelect);
+    return () => {
+      emblaApi.off("select", onSelect);
+      emblaApi.off("reInit", onSelect);
+    };
+  }, [emblaApi]);
+
+  if (count <= 1) return null;
+
+  return (
+    <div
+      className="flex items-center justify-center my-2"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div className="flex gap-1.5">
+        {Array.from({ length: count }, (_, idx) => (
+          <button
+            key={idx}
+            onClick={() => emblaApi?.scrollTo(idx)}
+            className={cn(
+              "h-1.5 rounded-full transition-all duration-300",
+              variant === "detail"
+                ? idx === selectedIndex
+                  ? "w-5 bg-foreground"
+                  : "w-1.5 bg-foreground/30"
+                : idx === selectedIndex
+                  ? "w-5 bg-foreground"
+                  : "w-1.5 bg-foreground/30"
+            )}
+            aria-label={`Go to image ${idx + 1}`}
+          />
+        ))}
+      </div>
     </div>
   );
 }
