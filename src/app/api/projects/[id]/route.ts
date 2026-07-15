@@ -47,28 +47,42 @@ export async function GET(
     // Generate signed URLs for protected or video assets
     const enriched: Record<string, unknown> = { ...project };
 
-    if (project.cloudinaryPublicId) {
+    const images = (project.images as string[]) || [];
+    const mediaType = (project.mediaType as string) || (images.length > 1 ? "image" : isVideoUrl(project.mediaUrl as string) ? "video" : "image");
+
+    if (mediaType === "video" && project.cloudinaryPublicId) {
       const publicId = project.cloudinaryPublicId as string;
       const url = project.mediaUrl as string;
       const isProtected = !!project.protected;
-      const isVideo = isVideoUrl(url);
-
-      if (isVideo) {
-        enriched.thumbnailUrl = getThumbnailUrl(publicId, isProtected);
-        enriched.signedVideoUrl = isProtected
-          ? signUrl(publicId, {
-              resource_type: "video",
+      enriched.thumbnailUrl = getThumbnailUrl(publicId, isProtected);
+      enriched.signedVideoUrl = isProtected
+        ? signUrl(publicId, {
+            resource_type: "video",
+            type: "authenticated",
+            expiresInSeconds: 3600,
+          })
+        : url;
+    } else if (images.length > 0) {
+      const isProtected = !!project.protected;
+      if (isProtected) {
+        enriched.signedImageUrls = images.map((imgUrl: string) => {
+          const match = imgUrl.match(/\/upload\/(?:v\d+\/)?(.+)/);
+          if (match) {
+            return signUrl(match[1], {
+              resource_type: "image",
               type: "authenticated",
               expiresInSeconds: 3600,
-            })
-          : url;
-      } else if (isProtected) {
-        enriched.signedImageUrl = signUrl(publicId, {
-          resource_type: "image",
-          type: "authenticated",
-          expiresInSeconds: 3600,
+            });
+          }
+          return imgUrl;
         });
       }
+    } else if (project.cloudinaryPublicId && !!project.protected) {
+      enriched.signedImageUrl = signUrl(project.cloudinaryPublicId as string, {
+        resource_type: "image",
+        type: "authenticated",
+        expiresInSeconds: 3600,
+      });
     }
 
     return NextResponse.json({ success: true, data: enriched });
@@ -136,7 +150,10 @@ export async function PATCH(
     }
 
     const body = await request.json();
-    const allowed = ["isDownloadable", "title", "description", "categories", "status"];
+    const allowed = [
+      "isDownloadable", "title", "description", "categories", "status",
+      "mediaType", "images", "soundtrackId", "soundtrackTitle", "soundtrackArtist",
+    ];
     for (const key of allowed) {
       if (key in body) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -219,6 +236,23 @@ export async function DELETE(
         });
       } catch (cloudErr) {
         console.error("Cloudinary deletion failed (non-fatal):", cloudErr);
+      }
+    }
+
+    // Also delete additional images from Cloudinary
+    const extraImages = (project as unknown as { images?: string[] }).images || [];
+    if (extraImages.length > 0) {
+      try {
+        const c = getCloudinary();
+        for (const imgUrl of extraImages) {
+          const match = imgUrl.match(/\/upload\/(?:v\d+\/)?(.+)/);
+          if (match) {
+            const publicId = match[1].replace(/\.[^.]+$/, "");
+            await c.uploader.destroy(publicId, { resource_type: "image" }).catch(() => {});
+          }
+        }
+      } catch (cloudErr) {
+        console.error("Cloudinary extra images deletion failed (non-fatal):", cloudErr);
       }
     }
 

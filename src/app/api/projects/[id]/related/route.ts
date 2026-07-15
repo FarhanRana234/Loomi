@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import mongoose from "mongoose";
 import { connectToDatabase } from "@/lib/db";
 import Project from "@/models/Project";
-import { isVideoUrl, getThumbnailUrl } from "@/lib/cloudinary";
+import { isVideoUrl, getThumbnailUrl, signUrl } from "@/lib/cloudinary";
 
 function isValidObjectId(id: string): boolean {
   return mongoose.Types.ObjectId.isValid(id);
@@ -13,12 +13,26 @@ type LeanProject = any;
 
 function enrichProject(p: LeanProject): Record<string, unknown> {
   const enriched: Record<string, unknown> = { ...p };
-  if (p.cloudinaryPublicId && isVideoUrl(p.mediaUrl)) {
-    enriched.thumbnailUrl = getThumbnailUrl(
-      p.cloudinaryPublicId,
-      !!p.protected
-    );
+
+  const images = (p.images as string[]) || [];
+  const mediaType = (p.mediaType as string) || (images.length > 1 ? "image" : isVideoUrl(p.mediaUrl as string) ? "video" : "image");
+
+  if (mediaType === "video" && p.cloudinaryPublicId) {
+    enriched.thumbnailUrl = getThumbnailUrl(p.cloudinaryPublicId, !!p.protected);
+  } else if (images.length > 0 && !!p.protected) {
+    enriched.signedImageUrls = images.map((imgUrl: string) => {
+      const match = imgUrl.match(/\/upload\/(?:v\d+\/)?(.+)/);
+      if (match) {
+        return signUrl(match[1], {
+          resource_type: "image",
+          type: "authenticated",
+          expiresInSeconds: 3600,
+        });
+      }
+      return imgUrl;
+    });
   }
+
   return enriched;
 }
 

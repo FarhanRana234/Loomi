@@ -15,6 +15,9 @@ import { ProjectCard } from "@/components/features/ProjectCard";
 import { DownloadButton } from "@/components/features/DownloadButton";
 import { CommentSection } from "@/components/features/CommentSection";
 import { MoodboardSelectModal } from "@/components/features/MoodboardSelectModal";
+import { ImageCarousel } from "@/components/features/ImageCarousel";
+import { VideoPlayer } from "@/components/features/VideoPlayer";
+import { MusicPlayer } from "@/components/features/MusicPlayer";
 import type { IProject } from "@/types";
 
 export default function ProjectDetailPage() {
@@ -125,8 +128,12 @@ export default function ProjectDetailPage() {
       user.firebaseId;
 
   const isProtected = (project as unknown as { protected?: boolean }).protected;
+  const images = project.images || [];
+  const hasMultipleImages = images.length > 1;
+  const isVideo = project.mediaType === "video" || (!project.mediaType && images.length === 0 && /\.(mp4|webm|mov)(\?|$)/i.test(project.mediaUrl));
+
   const protectedUrl =
-    isProtected && project.mediaUrl
+    isProtected && project.mediaUrl && !hasMultipleImages
       ? project.mediaUrl.replace(
           "/upload/",
           `/upload/l_text:Arial_40:${author.username}_©_Loomi,o_30/`
@@ -145,13 +152,16 @@ export default function ProjectDetailPage() {
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-5">
         <div className="lg:col-span-3">
-          {project.mediaUrl.includes(".mp4") ||
-          project.mediaUrl.includes("video") ? (
-            <video
+          {hasMultipleImages ? (
+            <ImageCarousel
+              images={images}
+              protectedImages={(project as unknown as { signedImageUrls?: string[] }).signedImageUrls}
+              alt={project.title}
+            />
+          ) : isVideo ? (
+            <VideoPlayer
               src={(project as unknown as { signedVideoUrl?: string }).signedVideoUrl || project.mediaUrl}
               poster={project.thumbnailUrl}
-              controls
-              className="w-full rounded-xl object-cover"
             />
           ) : (
             <img
@@ -209,6 +219,14 @@ export default function ProjectDetailPage() {
             </div>
           )}
 
+          {project.soundtrackId && (
+            <MusicPlayer
+              trackId={project.soundtrackId}
+              title={project.soundtrackTitle}
+              artist={project.soundtrackArtist}
+            />
+          )}
+
           <div className="flex flex-wrap gap-3">
             <Button
               variant={liked ? "default" : "outline"}
@@ -226,7 +244,7 @@ export default function ProjectDetailPage() {
             </Button>
             <DownloadButton
               url={project.mediaUrl}
-              filename={`${project.title}.${project.mediaUrl.includes("video") ? "mp4" : "jpg"}`}
+              filename={`${project.title}.${isVideo ? "mp4" : "jpg"}`}
               isDownloadable={!!(project as unknown as { isDownloadable?: boolean }).isDownloadable}
             />
             {user && !isOwner && (

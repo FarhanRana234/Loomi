@@ -5,15 +5,22 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
-import { X, Shield, ShieldCheck } from "lucide-react";
+import { X, Shield, ShieldCheck, Plus, GripVertical } from "lucide-react";
 import { z } from "zod";
 import { CategorySelector } from "@/components/features/CategorySelector";
+import { SoundtrackSearch } from "@/components/features/SoundtrackSearch";
 
 const uploadSchema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().optional(),
   projectCategories: z.array(z.string()).min(1, "At least one category is required."),
 });
+
+interface FileEntry {
+  file: File;
+  preview: string;
+  type: "image" | "video";
+}
 
 export default function UploadPage() {
   const router = useRouter();
@@ -26,32 +33,40 @@ export default function UploadPage() {
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState("");
-  const [preview, setPreview] = useState<string | null>(null);
-  const [previewType, setPreviewType] = useState<"image" | "video" | null>(null);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<FileEntry[]>([]);
+  const [soundtrack, setSoundtrack] = useState<{ id: string; title: string; artist: string } | null>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const newFiles = Array.from(e.target.files || []);
+    if (newFiles.length === 0) return;
 
-    setSelectedFile(file);
-    const url = URL.createObjectURL(file);
+    const entries: FileEntry[] = newFiles.map((file) => ({
+      file,
+      preview: URL.createObjectURL(file),
+      type: file.type.startsWith("video/") ? "video" : "image",
+    }));
 
-    if (file.type.startsWith("video/")) {
-      setPreviewType("video");
-    } else {
-      setPreviewType("image");
-    }
-    setPreview(url);
-  };
+    setFiles((prev) => {
+      const hasVideo = entries.some((e) => e.type === "video") || prev.some((e) => e.type === "video");
+      if (hasVideo) {
+        prev.forEach((e) => URL.revokeObjectURL(e.preview));
+        return entries.filter((e) => e.type === "video").slice(0, 1);
+      }
+      return [...prev, ...entries].filter((e) => e.type === "image").slice(0, 10);
+    });
 
-  const clearPreview = () => {
-    if (preview) URL.revokeObjectURL(preview);
-    setPreview(null);
-    setPreviewType(null);
-    setSelectedFile(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
+
+  const removeFile = (idx: number) => {
+    setFiles((prev) => {
+      URL.revokeObjectURL(prev[idx].preview);
+      return prev.filter((_, i) => i !== idx);
+    });
+  };
+
+  const hasVideo = files.some((f) => f.type === "video");
+  const isMultiImage = files.filter((f) => f.type === "image").length > 1;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,6 +75,11 @@ export default function UploadPage() {
     const validation = uploadSchema.safeParse({ title, description, projectCategories });
     if (!validation.success) {
       setError(validation.error.errors[0].message);
+      return;
+    }
+
+    if (files.length === 0) {
+      setError("Please select at least one file");
       return;
     }
 
@@ -73,38 +93,49 @@ export default function UploadPage() {
         throw new Error("Cloudinary not configured");
       }
 
-      if (!selectedFile) {
-        throw new Error("Please select a file");
+      const uploadedUrls: string[] = [];
+      const uploadedIds: string[] = [];
+      const totalFiles = files.length;
+
+      for (let i = 0; i < totalFiles; i++) {
+        setProgress(Math.round(((i + 0.5) / totalFiles) * 70));
+
+        const formData = new FormData();
+        formData.append("file", files[i].file);
+        formData.append("upload_preset", uploadPreset);
+        formData.append("resource_type", "auto");
+
+        const uploadRes = await fetch(
+          `https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`,
+          { method: "POST", body: formData }
+        );
+
+        if (!uploadRes.ok) throw new Error(`Upload failed for file ${i + 1}`);
+
+        const uploadData = await uploadRes.json();
+        uploadedUrls.push(uploadData.secure_url);
+        uploadedIds.push(uploadData.public_id);
       }
 
-      setProgress(30);
+      setProgress(75);
 
-      const formData = new FormData();
-      formData.append("file", selectedFile);
-      formData.append("upload_preset", uploadPreset);
-      formData.append("resource_type", "auto");
-
-      const uploadRes = await fetch(
-        `https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`,
-        { method: "POST", body: formData }
-      );
-
-      if (!uploadRes.ok) throw new Error("Upload failed");
-
-      const uploadData = await uploadRes.json();
-      setProgress(70);
+      const primaryMedia = files[0];
+      const mediaType = hasVideo ? "video" : "image";
 
       const projectRes = await fetch("/api/projects", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title,
           description,
           categories: projectCategories,
-          cloudinaryPublicId: uploadData.public_id,
-          mediaUrl: uploadData.secure_url,
+          cloudinaryPublicId: uploadedIds[0],
+          mediaUrl: uploadedUrls[0],
+          mediaType,
+          images: isMultiImage ? uploadedUrls : [],
+          soundtrackId: soundtrack?.id || "",
+          soundtrackTitle: soundtrack?.title || "",
+          soundtrackArtist: soundtrack?.artist || "",
           protected: isProtected,
           isDownloadable,
         }),
@@ -136,40 +167,76 @@ export default function UploadPage() {
               </div>
             )}
 
-            {preview && previewType === "image" ? (
-              <div className="relative overflow-hidden rounded-xl border border-border">
-                <img
-                  src={preview}
-                  alt="Preview"
-                  className="w-full max-h-80 object-contain bg-muted"
-                />
-                <button
-                  type="button"
-                  onClick={clearPreview}
-                  className="absolute right-2 top-2 rounded-full bg-foreground/80 p-1.5 text-background hover:bg-foreground"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-                <div className="p-3 text-center text-xs text-muted-foreground">
-                  {selectedFile?.name} ({(selectedFile?.size ?? 0 / 1024).toFixed(0)} KB)
-                </div>
-              </div>
-            ) : preview && previewType === "video" ? (
-              <div className="relative overflow-hidden rounded-xl border border-border">
-                <video
-                  src={preview}
-                  controls
-                  className="w-full max-h-80 object-contain bg-muted"
-                />
-                <button
-                  type="button"
-                  onClick={clearPreview}
-                  className="absolute right-2 top-2 rounded-full bg-foreground/80 p-1.5 text-background hover:bg-foreground"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-                <div className="p-3 text-center text-xs text-muted-foreground">
-                  {selectedFile?.name}
+            {files.length > 0 ? (
+              <div className="space-y-3">
+                {hasVideo ? (
+                  <div className="relative overflow-hidden rounded-xl border border-border">
+                    <video
+                      src={files[0].preview}
+                      controls
+                      className="w-full max-h-80 object-contain bg-muted"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeFile(0)}
+                      className="absolute right-2 top-2 rounded-full bg-foreground/80 p-1.5 text-background hover:bg-foreground"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                    <div className="p-3 text-center text-xs text-muted-foreground">
+                      {files[0].file.name}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                    {files.map((entry, idx) => (
+                      <div key={idx} className="group/file relative overflow-hidden rounded-xl border border-border">
+                        <img
+                          src={entry.preview}
+                          alt={`Upload ${idx + 1}`}
+                          className="aspect-square w-full object-cover"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeFile(idx)}
+                          className="absolute right-1.5 top-1.5 rounded-full bg-foreground/80 p-1 text-background opacity-0 transition-opacity group-hover/file:opacity-100 hover:bg-foreground"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                        {idx === 0 && (
+                          <div className="absolute left-1.5 top-1.5 rounded-full bg-foreground/80 px-1.5 py-0.5 text-[10px] font-medium text-background">
+                            Cover
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                    {files.length < 10 && (
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="flex aspect-square items-center justify-center rounded-xl border-2 border-dashed border-border transition-colors hover:border-foreground/30"
+                      >
+                        <Plus className="h-6 w-6 text-muted-foreground" />
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-muted-foreground">
+                    {files.length} file{files.length !== 1 ? "s" : ""} selected
+                    {files.length < 10 && !hasVideo && " (max 10)"}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      files.forEach((f) => URL.revokeObjectURL(f.preview));
+                      setFiles([]);
+                    }}
+                    className="text-xs text-muted-foreground underline hover:text-foreground"
+                  >
+                    Clear all
+                  </button>
                 </div>
               </div>
             ) : (
@@ -178,17 +245,17 @@ export default function UploadPage() {
                   ref={fileInputRef}
                   type="file"
                   accept="image/*,video/*"
+                  multiple
                   className="hidden"
                   onChange={handleFileChange}
                 />
                 <label
-                  htmlFor="file-upload"
                   className="cursor-pointer"
                   onClick={() => fileInputRef.current?.click()}
                 >
                   <p className="text-sm font-medium">Click or drag to upload</p>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    Images and videos accepted
+                    Select multiple images or a single video
                   </p>
                 </label>
               </div>
@@ -240,6 +307,11 @@ export default function UploadPage() {
                 placeholder="Add categories..."
                 max={10}
               />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Soundtrack (optional)</label>
+              <SoundtrackSearch value={soundtrack} onChange={setSoundtrack} />
             </div>
 
             <button
@@ -304,7 +376,7 @@ export default function UploadPage() {
             <Button
               type="submit"
               className="w-full"
-              disabled={uploading || !selectedFile}
+              disabled={uploading || files.length === 0}
             >
               {uploading ? "Uploading..." : "Publish Project"}
             </Button>

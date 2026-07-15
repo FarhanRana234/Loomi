@@ -11,28 +11,41 @@ type LeanProject = any;
 function enrichProject(p: LeanProject): Record<string, unknown> {
   const enriched: Record<string, unknown> = { ...p };
 
-  if (p.cloudinaryPublicId) {
-    const publicId = p.cloudinaryPublicId as string;
-    const url = p.mediaUrl as string;
-    const isProtected = !!p.protected;
-    const isVideo = isVideoUrl(url);
+  const images = (p.images as string[]) || [];
+  const mediaType = (p.mediaType as string) || (images.length > 1 ? "image" : isVideoUrl(p.mediaUrl as string) ? "video" : "image");
 
-    if (isVideo) {
-      enriched.thumbnailUrl = getThumbnailUrl(publicId, isProtected);
-      enriched.signedVideoUrl = isProtected
-        ? signUrl(publicId, {
-            resource_type: "video",
+  if (mediaType === "video" && p.cloudinaryPublicId) {
+    const publicId = p.cloudinaryPublicId as string;
+    const isProtected = !!p.protected;
+    enriched.thumbnailUrl = getThumbnailUrl(publicId, isProtected);
+    enriched.signedVideoUrl = isProtected
+      ? signUrl(publicId, {
+          resource_type: "video",
+          type: "authenticated",
+          expiresInSeconds: 3600,
+        })
+      : p.mediaUrl;
+  } else if (images.length > 0) {
+    const isProtected = !!p.protected;
+    if (isProtected) {
+      enriched.signedImageUrls = images.map((imgUrl: string) => {
+        const match = imgUrl.match(/\/upload\/(?:v\d+\/)?(.+)/);
+        if (match) {
+          return signUrl(match[1], {
+            resource_type: "image",
             type: "authenticated",
             expiresInSeconds: 3600,
-          })
-        : url;
-    } else if (isProtected) {
-      enriched.signedImageUrl = signUrl(publicId, {
-        resource_type: "image",
-        type: "authenticated",
-        expiresInSeconds: 3600,
+          });
+        }
+        return imgUrl;
       });
     }
+  } else if (p.cloudinaryPublicId && !!p.protected) {
+    enriched.signedImageUrl = signUrl(p.cloudinaryPublicId as string, {
+      resource_type: "image",
+      type: "authenticated",
+      expiresInSeconds: 3600,
+    });
   }
 
   return enriched;
@@ -115,6 +128,11 @@ export async function POST(request: NextRequest) {
       categories,
       cloudinaryPublicId,
       mediaUrl,
+      mediaType,
+      images,
+      soundtrackId,
+      soundtrackTitle,
+      soundtrackArtist,
       protected: isProtected,
       isDownloadable,
     } = body;
@@ -126,12 +144,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const resolvedMediaType = mediaType || ((images && images.length > 1) ? "image" : isVideoUrl(mediaUrl) ? "video" : "image");
+
     const project = await Project.create({
       title,
       description: description || "",
       categories: (categories || []).map((c: string) => c.toLowerCase().trim()),
       cloudinaryPublicId,
       mediaUrl,
+      mediaType: resolvedMediaType,
+      images: images || [],
+      soundtrackId: soundtrackId || "",
+      soundtrackTitle: soundtrackTitle || "",
+      soundtrackArtist: soundtrackArtist || "",
       userId: user._id,
       protected: !!isProtected,
       isDownloadable: !!isDownloadable,

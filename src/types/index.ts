@@ -22,7 +22,14 @@ export interface IProject {
   categories: string[];
   cloudinaryPublicId: string;
   mediaUrl: string;
+  mediaType: "video" | "image";
+  images: string[];
+  soundtrackId?: string;
+  soundtrackTitle?: string;
+  soundtrackArtist?: string;
   thumbnailUrl?: string;
+  signedVideoUrl?: string;
+  signedImageUrls?: string[];
   userId: IUser;
   likes: string[];
   views: number;

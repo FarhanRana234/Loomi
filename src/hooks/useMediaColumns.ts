@@ -10,8 +10,7 @@ export function useMediaColumns() {
       const w = window.innerWidth;
       if (w >= 1280) setColumns(4);
       else if (w >= 1024) setColumns(3);
-      else if (w >= 640) setColumns(2);
-      else setColumns(1);
+      else setColumns(2);
     }
     update();
     window.addEventListener("resize", update);

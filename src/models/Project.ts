@@ -6,6 +6,11 @@ export interface IProjectDocument extends Document {
   categories: string[];
   cloudinaryPublicId: string;
   mediaUrl: string;
+  mediaType: "video" | "image";
+  images: string[];
+  soundtrackId: string;
+  soundtrackTitle: string;
+  soundtrackArtist: string;
   userId: mongoose.Types.ObjectId;
   likes: string[];
   views: number;
@@ -21,6 +26,11 @@ const ProjectSchema = new Schema<IProjectDocument>(
     categories: { type: [String], default: [], index: true },
     cloudinaryPublicId: { type: String, required: true },
     mediaUrl: { type: String, required: true },
+    mediaType: { type: String, enum: ["video", "image"], default: "image" },
+    images: { type: [String], default: [] },
+    soundtrackId: { type: String, default: "" },
+    soundtrackTitle: { type: String, default: "" },
+    soundtrackArtist: { type: String, default: "" },
     userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
     likes: { type: [String], default: [] },
     views: { type: Number, default: 0 },
