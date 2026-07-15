@@ -239,10 +239,10 @@ function CardVideo({ src, poster }: { src: string; poster?: string }) {
       />
       <button
         onClick={toggleMute}
-        className="absolute bottom-2 right-2 z-10 flex h-[44px] w-[44px] items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm transition-colors hover:bg-black/70"
+        className="absolute bottom-2 right-2 z-10 flex h-8 w-8 sm:h-[44px] sm:w-[44px] items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm transition-colors hover:bg-black/70"
         aria-label={muted ? "Unmute" : "Mute"}
       >
-        {muted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+        {muted ? <VolumeX className="h-3.5 w-3.5 sm:h-5 sm:w-5" /> : <Volume2 className="h-3.5 w-3.5 sm:h-5 sm:w-5" />}
       </button>
     </div>
   );
