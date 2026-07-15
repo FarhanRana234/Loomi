@@ -66,12 +66,24 @@ export function ProjectCard({ project }: ProjectCardProps) {
   return (
     <div className="group relative overflow-hidden rounded-xl border border-border bg-card">
       {hasMultipleImages ? (
-        <CardCarousel
-          images={displayImages}
-          alt={project.title}
-          projectId={project._id}
-          onEmblaApi={setCarouselApi}
-        />
+        <div className="relative">
+          <CardCarousel
+            images={displayImages}
+            alt={project.title}
+            projectId={project._id}
+            onEmblaApi={setCarouselApi}
+          />
+          {hasSoundtrack && (
+            <SoundtrackChip
+              trackId={project.soundtrackId!}
+              title={project.soundtrackTitle}
+              artist={project.soundtrackArtist}
+              thumbnail={project.soundtrackThumbnail}
+              variant="feed"
+              autoPlay
+            />
+          )}
+        </div>
       ) : (
         <Link href={`/project/${project._id}`}>
           <div className="relative overflow-hidden">
@@ -79,6 +91,10 @@ export function ProjectCard({ project }: ProjectCardProps) {
               <CardVideo
                 src={(project as unknown as { signedVideoUrl?: string }).signedVideoUrl || project.mediaUrl}
                 poster={project.thumbnailUrl}
+                soundtrackId={project.soundtrackId || undefined}
+                soundtrackTitle={project.soundtrackTitle}
+                soundtrackArtist={project.soundtrackArtist}
+                soundtrackThumbnail={project.soundtrackThumbnail}
               />
             ) : (
               <img
@@ -96,6 +112,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
                 artist={project.soundtrackArtist}
                 thumbnail={project.soundtrackThumbnail}
                 variant="feed"
+                autoPlay
               />
             )}
 
@@ -187,11 +204,26 @@ function CardCarousel({
   );
 }
 
-function CardVideo({ src, poster }: { src: string; poster?: string }) {
+function CardVideo({
+  src,
+  poster,
+  soundtrackId,
+  soundtrackTitle,
+  soundtrackArtist,
+  soundtrackThumbnail,
+}: {
+  src: string;
+  poster?: string;
+  soundtrackId?: string;
+  soundtrackTitle?: string;
+  soundtrackArtist?: string;
+  soundtrackThumbnail?: string;
+}) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [muted, setMuted] = useState(true);
   const [isInView, setIsInView] = useState(false);
+  const hasSoundtrack = !!soundtrackId;
 
   useEffect(() => {
     const video = videoRef.current;
@@ -237,13 +269,24 @@ function CardVideo({ src, poster }: { src: string; poster?: string }) {
         preload="auto"
         className="w-full object-cover transition-transform duration-300 group-hover:scale-105"
       />
-      <button
-        onClick={toggleMute}
-        className="absolute bottom-2 right-2 z-10 flex h-8 w-8 sm:h-[44px] sm:w-[44px] items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm transition-colors hover:bg-black/70"
-        aria-label={muted ? "Unmute" : "Mute"}
-      >
-        {muted ? <VolumeX className="h-3.5 w-3.5 sm:h-5 sm:w-5" /> : <Volume2 className="h-3.5 w-3.5 sm:h-5 sm:w-5" />}
-      </button>
+      {hasSoundtrack ? (
+        <SoundtrackChip
+          trackId={soundtrackId}
+          title={soundtrackTitle}
+          artist={soundtrackArtist}
+          thumbnail={soundtrackThumbnail}
+          variant="feed"
+          autoPlay
+        />
+      ) : (
+        <button
+          onClick={toggleMute}
+          className="absolute bottom-2 right-2 z-10 flex h-8 w-8 sm:h-[44px] sm:w-[44px] items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm transition-colors hover:bg-black/70"
+          aria-label={muted ? "Unmute" : "Mute"}
+        >
+          {muted ? <VolumeX className="h-3.5 w-3.5 sm:h-5 sm:w-5" /> : <Volume2 className="h-3.5 w-3.5 sm:h-5 sm:w-5" />}
+        </button>
+      )}
     </div>
   );
 }
