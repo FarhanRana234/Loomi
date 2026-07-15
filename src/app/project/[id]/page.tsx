@@ -197,7 +197,7 @@ export default function ProjectDetailPage() {
                 </div>
               )}
 
-              {hasSoundtrack && isImage && (
+              {hasSoundtrack && (
                 <SoundtrackChip
                   trackId={project.soundtrackId!}
                   title={project.soundtrackTitle}

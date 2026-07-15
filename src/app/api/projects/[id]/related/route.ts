@@ -12,28 +12,36 @@ function isValidObjectId(id: string): boolean {
 type LeanProject = any;
 
 function enrichProject(p: LeanProject): Record<string, unknown> {
-  const enriched: Record<string, unknown> = { ...p };
+  try {
+    const enriched: Record<string, unknown> = { ...p };
 
-  const images = (p.images as string[]) || [];
-  const mediaType = (p.mediaType as string) || (images.length > 1 ? "image" : isVideoUrl(p.mediaUrl as string) ? "video" : "image");
+    const images = (p.images as string[]) || [];
+    const mediaType = (p.mediaType as string) || (images.length > 1 ? "image" : isVideoUrl(p.mediaUrl as string) ? "video" : "image");
 
-  if (mediaType === "video" && p.cloudinaryPublicId) {
-    enriched.thumbnailUrl = getThumbnailUrl(p.cloudinaryPublicId, !!p.protected);
-  } else if (images.length > 0 && !!p.protected) {
-    enriched.signedImageUrls = images.map((imgUrl: string) => {
-      const match = imgUrl.match(/\/upload\/(?:v\d+\/)?(.+)/);
-      if (match) {
-        return signUrl(match[1], {
-          resource_type: "image",
-          type: "authenticated",
-          expiresInSeconds: 3600,
-        });
-      }
-      return imgUrl;
-    });
+    if (mediaType === "video" && p.cloudinaryPublicId) {
+      enriched.thumbnailUrl = getThumbnailUrl(p.cloudinaryPublicId, !!p.protected);
+    } else if (images.length > 0 && !!p.protected) {
+      enriched.signedImageUrls = images.map((imgUrl: string) => {
+        try {
+          const match = imgUrl.match(/\/upload\/(?:v\d+\/)?(.+)/);
+          if (match) {
+            return signUrl(match[1], {
+              resource_type: "image",
+              type: "authenticated",
+              expiresInSeconds: 3600,
+            });
+          }
+          return imgUrl;
+        } catch {
+          return imgUrl;
+        }
+      });
+    }
+
+    return enriched;
+  } catch {
+    return { ...p };
   }
-
-  return enriched;
 }
 
 export async function GET(
