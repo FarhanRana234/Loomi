@@ -17,7 +17,7 @@ import { CommentSection } from "@/components/features/CommentSection";
 import { MoodboardSelectModal } from "@/components/features/MoodboardSelectModal";
 import { ImageCarousel } from "@/components/features/ImageCarousel";
 import { VideoPlayer } from "@/components/features/VideoPlayer";
-import { MusicPlayer } from "@/components/features/MusicPlayer";
+import { SoundtrackChip } from "@/components/features/SoundtrackChip";
 import type { IProject } from "@/types";
 
 export default function ProjectDetailPage() {
@@ -131,6 +131,8 @@ export default function ProjectDetailPage() {
   const images = project.images || [];
   const hasMultipleImages = images.length > 1;
   const isVideo = project.mediaType === "video" || (!project.mediaType && images.length === 0 && /\.(mp4|webm|mov)(\?|$)/i.test(project.mediaUrl));
+  const isImage = !isVideo;
+  const hasSoundtrack = !!project.soundtrackId;
 
   const protectedUrl =
     isProtected && project.mediaUrl && !hasMultipleImages
@@ -152,26 +154,39 @@ export default function ProjectDetailPage() {
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-5">
         <div className="lg:col-span-3">
-          {hasMultipleImages ? (
-            <ImageCarousel
-              images={images}
-              protectedImages={(project as unknown as { signedImageUrls?: string[] }).signedImageUrls}
-              alt={project.title}
-              variant="detail"
-            />
-          ) : isVideo ? (
-            <VideoPlayer
-              src={(project as unknown as { signedVideoUrl?: string }).signedVideoUrl || project.mediaUrl}
-              poster={project.thumbnailUrl}
-            />
-          ) : (
-            <img
-              src={protectedUrl}
-              alt={project.title}
-              className="w-full rounded-xl object-cover"
-              onContextMenu={(e) => isProtected && e.preventDefault()}
-            />
-          )}
+          <div className="relative">
+            {hasMultipleImages ? (
+              <ImageCarousel
+                images={images}
+                protectedImages={(project as unknown as { signedImageUrls?: string[] }).signedImageUrls}
+                alt={project.title}
+                variant="detail"
+              />
+            ) : isVideo ? (
+              <VideoPlayer
+                src={(project as unknown as { signedVideoUrl?: string }).signedVideoUrl || project.mediaUrl}
+                poster={project.thumbnailUrl}
+                variant="detail"
+              />
+            ) : (
+              <img
+                src={protectedUrl}
+                alt={project.title}
+                className="w-full rounded-xl object-cover"
+                onContextMenu={(e) => isProtected && e.preventDefault()}
+              />
+            )}
+
+            {hasSoundtrack && isImage && (
+              <SoundtrackChip
+                trackId={project.soundtrackId!}
+                title={project.soundtrackTitle}
+                artist={project.soundtrackArtist}
+                thumbnail={project.soundtrackThumbnail}
+                variant="detail"
+              />
+            )}
+          </div>
         </div>
 
         <div className="space-y-6 lg:col-span-2">
@@ -218,15 +233,6 @@ export default function ProjectDetailPage() {
                 </Link>
               ))}
             </div>
-          )}
-
-          {project.soundtrackId && (
-            <MusicPlayer
-              trackId={project.soundtrackId}
-              title={project.soundtrackTitle}
-              artist={project.soundtrackArtist}
-              thumbnail={project.soundtrackThumbnail}
-            />
           )}
 
           <div className="flex flex-wrap gap-3">

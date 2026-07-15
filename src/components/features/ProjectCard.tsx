@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useUserStore } from "@/hooks/useUserStore";
+import { SoundtrackChip } from "@/components/features/SoundtrackChip";
 import type { IProject } from "@/types";
 
 interface ProjectCardProps {
@@ -24,6 +25,8 @@ export function ProjectCard({ project }: ProjectCardProps) {
   const images = project.images || [];
   const hasMultipleImages = images.length > 1;
   const isVideo = project.mediaType === "video" || (!project.mediaType && images.length === 0 && /\.(mp4|webm|mov)(\?|$)/i.test(project.mediaUrl));
+  const isImage = !isVideo;
+  const hasSoundtrack = !!project.soundtrackId;
 
   const displayImages = hasMultipleImages
     ? ((project as unknown as { signedImageUrls?: string[] }).signedImageUrls || images)
@@ -75,6 +78,17 @@ export function ProjectCard({ project }: ProjectCardProps) {
               loading="lazy"
             />
           )}
+
+          {hasSoundtrack && isImage && (
+            <SoundtrackChip
+              trackId={project.soundtrackId!}
+              title={project.soundtrackTitle}
+              artist={project.soundtrackArtist}
+              thumbnail={project.soundtrackThumbnail}
+              variant="feed"
+            />
+          )}
+
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
           <div className="absolute bottom-0 left-0 right-0 p-4 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
             <h3 className="text-sm font-semibold text-white tracking-tight">
@@ -226,10 +240,10 @@ function CardVideo({ src, poster }: { src: string; poster?: string }) {
       />
       <button
         onClick={toggleMute}
-        className="absolute bottom-2 right-2 z-10 rounded-full bg-background/80 p-1.5 text-foreground opacity-0 backdrop-blur-sm transition-opacity group-hover/video:opacity-100"
+        className="absolute bottom-2 right-2 z-10 flex h-[44px] w-[44px] items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm transition-colors hover:bg-black/70"
         aria-label={muted ? "Unmute" : "Mute"}
       >
-        {muted ? <VolumeX className="h-3.5 w-3.5" /> : <Volume2 className="h-3.5 w-3.5" />}
+        {muted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
       </button>
     </div>
   );
