@@ -133,6 +133,7 @@ export async function POST(request: NextRequest) {
       soundtrackId,
       soundtrackTitle,
       soundtrackArtist,
+      soundtrackThumbnail,
       protected: isProtected,
       isDownloadable,
     } = body;
@@ -157,6 +158,7 @@ export async function POST(request: NextRequest) {
       soundtrackId: soundtrackId || "",
       soundtrackTitle: soundtrackTitle || "",
       soundtrackArtist: soundtrackArtist || "",
+      soundtrackThumbnail: soundtrackThumbnail || "",
       userId: user._id,
       protected: !!isProtected,
       isDownloadable: !!isDownloadable,

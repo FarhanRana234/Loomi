@@ -152,7 +152,7 @@ export async function PATCH(
     const body = await request.json();
     const allowed = [
       "isDownloadable", "title", "description", "categories", "status",
-      "mediaType", "images", "soundtrackId", "soundtrackTitle", "soundtrackArtist",
+      "mediaType", "images", "soundtrackId", "soundtrackTitle", "soundtrackArtist", "soundtrackThumbnail",
     ];
     for (const key of allowed) {
       if (key in body) {

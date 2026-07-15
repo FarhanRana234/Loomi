@@ -27,6 +27,7 @@ export interface IProject {
   soundtrackId?: string;
   soundtrackTitle?: string;
   soundtrackArtist?: string;
+  soundtrackThumbnail?: string;
   thumbnailUrl?: string;
   signedVideoUrl?: string;
   signedImageUrls?: string[];

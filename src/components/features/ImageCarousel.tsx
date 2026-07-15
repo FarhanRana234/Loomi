@@ -10,6 +10,7 @@ interface ImageCarouselProps {
   alt: string;
   className?: string;
   protectedImages?: string[];
+  variant?: "feed" | "detail";
 }
 
 export function ImageCarousel({
@@ -17,6 +18,7 @@ export function ImageCarousel({
   alt,
   className,
   protectedImages,
+  variant = "feed",
 }: ImageCarouselProps) {
   const [emblaRef, emblaApi] = useEmblaCarousel(
     { loop: images.length > 1, dragFree: false },
@@ -53,6 +55,8 @@ export function ImageCarousel({
     ? protectedImages
     : images;
 
+  const isDetail = variant === "detail";
+
   return (
     <div className={cn("group/carousel relative", className)}>
       <div className="overflow-hidden rounded-xl" ref={emblaRef}>
@@ -77,7 +81,7 @@ export function ImageCarousel({
       {images.length > 1 && (
         <>
           <button
-            onClick={scrollPrev}
+            onClick={(e) => { e.stopPropagation(); scrollPrev(); }}
             className={cn(
               "absolute left-2 top-1/2 z-10 -translate-y-1/2 rounded-full bg-background/80 p-1.5 text-foreground backdrop-blur-sm transition-opacity",
               "opacity-0 group-hover/carousel:opacity-100",
@@ -90,7 +94,7 @@ export function ImageCarousel({
             </svg>
           </button>
           <button
-            onClick={scrollNext}
+            onClick={(e) => { e.stopPropagation(); scrollNext(); }}
             className={cn(
               "absolute right-2 top-1/2 z-10 -translate-y-1/2 rounded-full bg-background/80 p-1.5 text-foreground backdrop-blur-sm transition-opacity",
               "opacity-0 group-hover/carousel:opacity-100",
@@ -103,16 +107,25 @@ export function ImageCarousel({
             </svg>
           </button>
 
-          <div className="absolute bottom-3 left-1/2 z-10 flex -translate-x-1/2 gap-1.5">
+          <div
+            className={cn(
+              "absolute bottom-3 left-1/2 z-10 flex -translate-x-1/2 gap-1.5",
+            )}
+            onClick={(e) => e.stopPropagation()}
+          >
             {displayImages.map((_, idx) => (
               <button
                 key={idx}
                 onClick={() => emblaApi?.scrollTo(idx)}
                 className={cn(
                   "h-1.5 rounded-full transition-all duration-300",
-                  idx === selectedIndex
-                    ? "w-5 bg-background"
-                    : "w-1.5 bg-background/50"
+                  isDetail
+                    ? idx === selectedIndex
+                      ? "w-5 bg-white"
+                      : "w-1.5 bg-white/50"
+                    : idx === selectedIndex
+                      ? "w-5 bg-foreground/80"
+                      : "w-1.5 bg-foreground/30"
                 )}
                 aria-label={`Go to image ${idx + 1}`}
               />

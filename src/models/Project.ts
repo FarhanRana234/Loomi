@@ -11,6 +11,7 @@ export interface IProjectDocument extends Document {
   soundtrackId: string;
   soundtrackTitle: string;
   soundtrackArtist: string;
+  soundtrackThumbnail: string;
   userId: mongoose.Types.ObjectId;
   likes: string[];
   views: number;
@@ -31,6 +32,7 @@ const ProjectSchema = new Schema<IProjectDocument>(
     soundtrackId: { type: String, default: "" },
     soundtrackTitle: { type: String, default: "" },
     soundtrackArtist: { type: String, default: "" },
+    soundtrackThumbnail: { type: String, default: "" },
     userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
     likes: { type: [String], default: [] },
     views: { type: Number, default: 0 },

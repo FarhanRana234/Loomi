@@ -155,7 +155,10 @@ function CardCarousel({ images, alt }: { images: string[]; alt: string }) {
         </div>
       </div>
       {images.length > 1 && (
-        <div className="absolute bottom-2 left-1/2 z-10 flex -translate-x-1/2 gap-1">
+        <div
+          className="absolute bottom-2 left-1/2 z-10 flex -translate-x-1/2 gap-1"
+          onClick={(e) => e.stopPropagation()}
+        >
           {images.map((_, idx) => (
             <div
               key={idx}

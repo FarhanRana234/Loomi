@@ -157,6 +157,7 @@ export default function ProjectDetailPage() {
               images={images}
               protectedImages={(project as unknown as { signedImageUrls?: string[] }).signedImageUrls}
               alt={project.title}
+              variant="detail"
             />
           ) : isVideo ? (
             <VideoPlayer
@@ -224,6 +225,7 @@ export default function ProjectDetailPage() {
               trackId={project.soundtrackId}
               title={project.soundtrackTitle}
               artist={project.soundtrackArtist}
+              thumbnail={project.soundtrackThumbnail}
             />
           )}
 

@@ -34,7 +34,7 @@ export default function UploadPage() {
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState("");
   const [files, setFiles] = useState<FileEntry[]>([]);
-  const [soundtrack, setSoundtrack] = useState<{ id: string; title: string; artist: string } | null>(null);
+  const [soundtrack, setSoundtrack] = useState<{ id: string; title: string; artist: string; thumbnail: string } | null>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newFiles = Array.from(e.target.files || []);
@@ -136,6 +136,7 @@ export default function UploadPage() {
           soundtrackId: soundtrack?.id || "",
           soundtrackTitle: soundtrack?.title || "",
           soundtrackArtist: soundtrack?.artist || "",
+          soundtrackThumbnail: soundtrack?.thumbnail || "",
           protected: isProtected,
           isDownloadable,
         }),
