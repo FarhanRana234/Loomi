@@ -197,10 +197,10 @@ export function SoundtrackChip({
     <div
       onClick={(e) => e.stopPropagation()}
       className={cn(
-        "absolute z-20 flex items-center gap-2 rounded-xl backdrop-blur-md shadow-lg",
+        "absolute z-20 flex items-center gap-1.5 rounded-lg backdrop-blur-md shadow-lg sm:rounded-xl sm:gap-2",
         isDetail
-          ? "bottom-4 left-4 bg-black/60 px-3 py-2"
-          : "bottom-2 left-2 bg-black/60 px-2 py-1.5",
+          ? "top-3 right-3 bg-black/60 px-2 py-1.5 sm:px-3 sm:py-2"
+          : "top-1.5 right-1.5 bg-black/60 px-1.5 py-1 sm:top-2 sm:right-2 sm:px-2 sm:py-1.5",
         "select-none"
       )}
     >
@@ -212,19 +212,19 @@ export function SoundtrackChip({
           alt={title || "Soundtrack"}
           className={cn(
             "shrink-0 rounded object-cover",
-            isDetail ? "h-8 w-8" : "h-6 w-6"
+            isDetail ? "h-6 w-6 sm:h-8 sm:w-8" : "h-5 w-5 sm:h-6 sm:w-6"
           )}
         />
       ) : (
         <div className={cn(
           "flex shrink-0 items-center justify-center rounded bg-white/10",
-          isDetail ? "h-8 w-8" : "h-6 w-6"
+          isDetail ? "h-6 w-6 sm:h-8 sm:w-8" : "h-5 w-5 sm:h-6 sm:w-6"
         )}>
-          <Music className={cn("text-white/70", isDetail ? "h-3.5 w-3.5" : "h-2.5 w-2.5")} />
+          <Music className={cn("text-white/70", isDetail ? "h-3 w-3 sm:h-3.5 sm:w-3.5" : "h-2 w-2 sm:h-2.5 sm:w-2.5")} />
         </div>
       )}
 
-      <div className="min-w-0 max-w-[140px] sm:max-w-[200px]">
+      <div className="hidden min-w-0 max-w-[80px] sm:block sm:max-w-[200px]">
         {title && (
           <p className={cn(
             "truncate font-medium text-white",
@@ -247,14 +247,14 @@ export function SoundtrackChip({
         onClick={togglePlay}
         className={cn(
           "flex shrink-0 items-center justify-center rounded-full bg-white/20 text-white transition-colors hover:bg-white/30",
-          isDetail ? "h-8 w-8" : "h-6 w-6"
+          isDetail ? "h-6 w-6 sm:h-8 sm:w-8" : "h-5 w-5 sm:h-6 sm:w-6"
         )}
         aria-label={isPlaying ? "Pause soundtrack" : "Play soundtrack"}
       >
         {isPlaying ? (
-          <Pause className={cn(isDetail ? "h-3.5 w-3.5" : "h-2.5 w-2.5")} />
+          <Pause className={cn(isDetail ? "h-3 w-3 sm:h-3.5 sm:w-3.5" : "h-2.5 w-2.5")} />
         ) : (
-          <Play className={cn(isDetail ? "h-3.5 w-3.5" : "h-2.5 w-2.5", "ml-0.5")} />
+          <Play className={cn(isDetail ? "h-3 w-3 sm:h-3.5 sm:w-3.5" : "h-2.5 w-2.5", "ml-0.5")} />
         )}
       </button>
 
@@ -262,14 +262,14 @@ export function SoundtrackChip({
         onClick={toggleMute}
         className={cn(
           "flex shrink-0 items-center justify-center rounded-full text-white/70 transition-colors hover:text-white",
-          isDetail ? "h-8 w-8" : "h-6 w-6"
+          isDetail ? "h-6 w-6 sm:h-8 sm:w-8" : "h-5 w-5 sm:h-6 sm:w-6"
         )}
         aria-label={isMuted ? "Unmute soundtrack" : "Mute soundtrack"}
       >
         {isMuted ? (
-          <VolumeX className={cn(isDetail ? "h-3.5 w-3.5" : "h-2.5 w-2.5")} />
+          <VolumeX className={cn(isDetail ? "h-3 w-3 sm:h-3.5 sm:w-3.5" : "h-2.5 w-2.5")} />
         ) : (
-          <Volume2 className={cn(isDetail ? "h-3.5 w-3.5" : "h-2.5 w-2.5")} />
+          <Volume2 className={cn(isDetail ? "h-3 w-3 sm:h-3.5 sm:w-3.5" : "h-2.5 w-2.5")} />
         )}
       </button>
     </div>
