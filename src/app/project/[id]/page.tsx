@@ -18,7 +18,7 @@ import { MoodboardSelectModal } from "@/components/features/MoodboardSelectModal
 import { ImageCarousel, PaginationDots } from "@/components/features/ImageCarousel";
 import type { EmblaCarouselType } from "embla-carousel";
 import { VideoPlayer } from "@/components/features/VideoPlayer";
-import { SoundtrackChip } from "@/components/features/SoundtrackChip";
+import { SoundButton } from "@/components/features/SoundButton";
 import type { IProject } from "@/types";
 
 export default function ProjectDetailPage() {
@@ -198,13 +198,9 @@ export default function ProjectDetailPage() {
               )}
 
               {hasSoundtrack && (
-                <SoundtrackChip
+                <SoundButton
                   trackId={project.soundtrackId!}
-                  title={project.soundtrackTitle}
-                  artist={project.soundtrackArtist}
-                  thumbnail={project.soundtrackThumbnail}
-                  variant="detail"
-                  autoPlay
+                  className="absolute top-3 right-3 z-20 h-10 w-10 sm:h-11 sm:w-11"
                 />
               )}
             </div>

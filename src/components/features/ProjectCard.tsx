@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useUserStore } from "@/hooks/useUserStore";
-import { SoundtrackChip } from "@/components/features/SoundtrackChip";
+import { SoundButton } from "@/components/features/SoundButton";
 import { PaginationDots } from "@/components/features/ImageCarousel";
 import type { IProject } from "@/types";
 
@@ -74,13 +74,9 @@ export function ProjectCard({ project }: ProjectCardProps) {
             onEmblaApi={setCarouselApi}
           />
           {hasSoundtrack && (
-            <SoundtrackChip
+            <SoundButton
               trackId={project.soundtrackId!}
-              title={project.soundtrackTitle}
-              artist={project.soundtrackArtist}
-              thumbnail={project.soundtrackThumbnail}
-              variant="feed"
-              autoPlay
+              className="absolute top-2 right-2 z-20 h-8 w-8 sm:h-9 sm:w-9"
             />
           )}
         </div>
@@ -92,9 +88,6 @@ export function ProjectCard({ project }: ProjectCardProps) {
                 src={(project as unknown as { signedVideoUrl?: string }).signedVideoUrl || project.mediaUrl}
                 poster={project.thumbnailUrl}
                 soundtrackId={project.soundtrackId || undefined}
-                soundtrackTitle={project.soundtrackTitle}
-                soundtrackArtist={project.soundtrackArtist}
-                soundtrackThumbnail={project.soundtrackThumbnail}
               />
             ) : (
               <img
@@ -106,13 +99,9 @@ export function ProjectCard({ project }: ProjectCardProps) {
             )}
 
             {hasSoundtrack && isImage && (
-              <SoundtrackChip
+              <SoundButton
                 trackId={project.soundtrackId!}
-                title={project.soundtrackTitle}
-                artist={project.soundtrackArtist}
-                thumbnail={project.soundtrackThumbnail}
-                variant="feed"
-                autoPlay
+                className="absolute top-2 right-2 z-20 h-8 w-8 sm:h-9 sm:w-9"
               />
             )}
 
@@ -208,16 +197,10 @@ function CardVideo({
   src,
   poster,
   soundtrackId,
-  soundtrackTitle,
-  soundtrackArtist,
-  soundtrackThumbnail,
 }: {
   src: string;
   poster?: string;
   soundtrackId?: string;
-  soundtrackTitle?: string;
-  soundtrackArtist?: string;
-  soundtrackThumbnail?: string;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -270,13 +253,9 @@ function CardVideo({
         className="w-full object-cover transition-transform duration-300 group-hover:scale-105"
       />
       {hasSoundtrack ? (
-        <SoundtrackChip
-          trackId={soundtrackId}
-          title={soundtrackTitle}
-          artist={soundtrackArtist}
-          thumbnail={soundtrackThumbnail}
-          variant="feed"
-          autoPlay
+        <SoundButton
+          trackId={soundtrackId!}
+          className="absolute bottom-2 right-2 z-10 h-8 w-8 sm:h-9 sm:w-9"
         />
       ) : (
         <button
