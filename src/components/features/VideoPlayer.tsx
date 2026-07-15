@@ -118,10 +118,10 @@ export function VideoPlayer({
       {!isDetail && (
         <button
           onClick={toggleMute}
-          className="absolute bottom-2 right-2 z-10 flex h-8 w-8 sm:h-[44px] sm:w-[44px] items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm transition-colors hover:bg-black/70"
+          className="absolute bottom-2 right-2 z-10 flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm transition-colors hover:bg-black/70"
           aria-label={muted ? "Unmute video" : "Mute video"}
         >
-          {muted ? <VolumeX className="h-3.5 w-3.5 sm:h-5 sm:w-5" /> : <Volume2 className="h-3.5 w-3.5 sm:h-5 sm:w-5" />}
+          {muted ? <VolumeX className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> : <Volume2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />}
         </button>
       )}
 
@@ -135,14 +135,14 @@ export function VideoPlayer({
         >
           <button
             onClick={togglePlay}
-            className="flex h-10 w-10 sm:h-[44px] sm:w-[44px] items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm transition-colors hover:bg-black/70"
+            className="flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm transition-colors hover:bg-black/70"
             aria-label={isPlaying ? "Pause video" : "Play video"}
           >
             {isPlaying ? <Pause className="h-4 w-4 sm:h-5 sm:w-5" /> : <Play className="ml-0.5 h-4 w-4 sm:h-5 sm:w-5" />}
           </button>
           <button
             onClick={toggleMute}
-            className="flex h-10 w-10 sm:h-[44px] sm:w-[44px] items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm transition-colors hover:bg-black/70"
+            className="flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm transition-colors hover:bg-black/70"
             aria-label={muted ? "Unmute video" : "Mute video"}
           >
             {muted ? <VolumeX className="h-4 w-4 sm:h-5 sm:w-5" /> : <Volume2 className="h-4 w-4 sm:h-5 sm:w-5" />}

@@ -211,7 +211,7 @@ export default function ProjectDetailPage() {
               {hasSoundtrack && (
                 <SoundButton
                   trackId={project.soundtrackId!}
-                  className="absolute top-3 right-3 z-20 h-10 w-10 sm:h-11 sm:w-11"
+                  className="absolute bottom-3 right-3 z-20 h-10 w-10 sm:h-11 sm:w-11"
                 />
               )}
             </div>
