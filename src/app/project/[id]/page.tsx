@@ -19,6 +19,7 @@ import { ImageCarousel, PaginationDots } from "@/components/features/ImageCarous
 import type { EmblaCarouselType } from "embla-carousel";
 import { VideoPlayer } from "@/components/features/VideoPlayer";
 import { SoundButton } from "@/components/features/SoundButton";
+import { TrackMarquee, AudioLabel } from "@/components/features/AudioLabel";
 import type { IProject } from "@/types";
 
 export default function ProjectDetailPage() {
@@ -195,6 +196,16 @@ export default function ProjectDetailPage() {
                     onContextMenu={(e) => isProtected && e.preventDefault()}
                   />
                 </div>
+              )}
+
+              {hasSoundtrack && (
+                <TrackMarquee
+                  text={project.soundtrackTitle || "Soundtrack"}
+                />
+              )}
+
+              {!hasSoundtrack && isVideo && (
+                <AudioLabel text="Original audio" />
               )}
 
               {hasSoundtrack && (
