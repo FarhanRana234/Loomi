@@ -66,17 +66,23 @@ export function ImageCarousel({
 
   return (
     <div className={cn("group/carousel relative", className)}>
-      <div className="overflow-hidden rounded-xl" ref={emblaRef}>
-        <div className="flex">
+      <div
+        className={cn(
+          "overflow-hidden rounded-xl",
+          isDetail ? "aspect-[4/3]" : "aspect-square"
+        )}
+        ref={emblaRef}
+      >
+        <div className="flex h-full">
           {displayImages.map((img, idx) => (
             <div
               key={idx}
-              className="min-w-0 flex-[0_0_100%] relative"
+              className="min-w-0 flex-[0_0_100%] relative h-full"
             >
               <img
                 src={img}
                 alt={`${alt} ${idx + 1}`}
-                className="h-auto w-full object-cover"
+                className="h-full w-full object-contain"
                 loading={idx === 0 ? "eager" : "lazy"}
                 draggable={false}
               />

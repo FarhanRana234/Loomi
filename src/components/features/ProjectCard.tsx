@@ -167,15 +167,15 @@ function CardCarousel({
   }, [emblaApi, onEmblaApi]);
 
   return (
-    <div className="overflow-hidden" ref={emblaRef}>
-      <div className="flex">
+    <div className="aspect-square overflow-hidden" ref={emblaRef}>
+      <div className="flex h-full">
         {images.map((img, idx) => (
-          <div key={idx} className="min-w-0 flex-[0_0_100%]">
+          <div key={idx} className="min-w-0 flex-[0_0_100%] h-full">
             <Link href={`/project/${projectId}`}>
               <img
                 src={img}
                 alt={`${alt} ${idx + 1}`}
-                className="w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-105"
                 loading={idx === 0 ? "eager" : "lazy"}
                 draggable={false}
               />

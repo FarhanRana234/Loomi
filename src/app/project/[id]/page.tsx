@@ -157,41 +157,46 @@ export default function ProjectDetailPage() {
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-5">
         <div className="lg:col-span-3">
           <div>
-            {hasMultipleImages ? (
-              <ImageCarousel
-                images={images}
-                protectedImages={(project as unknown as { signedImageUrls?: string[] }).signedImageUrls}
-                alt={project.title}
-                variant="detail"
-                onEmblaApi={setCarouselApi}
-              />
-            ) : isVideo ? (
-              <VideoPlayer
-                src={(project as unknown as { signedVideoUrl?: string }).signedVideoUrl || project.mediaUrl}
-                poster={project.thumbnailUrl}
-                variant="detail"
-              />
-            ) : (
-              <img
-                src={protectedUrl}
-                alt={project.title}
-                className="w-full rounded-xl object-cover"
-                onContextMenu={(e) => isProtected && e.preventDefault()}
-              />
-            )}
+            <div className="relative">
+              {hasMultipleImages ? (
+                <ImageCarousel
+                  images={images}
+                  protectedImages={(project as unknown as { signedImageUrls?: string[] }).signedImageUrls}
+                  alt={project.title}
+                  variant="detail"
+                  onEmblaApi={setCarouselApi}
+                />
+              ) : isVideo ? (
+                <VideoPlayer
+                  src={(project as unknown as { signedVideoUrl?: string }).signedVideoUrl || project.mediaUrl}
+                  poster={project.thumbnailUrl}
+                  variant="detail"
+                />
+              ) : (
+                <div className="relative aspect-[4/3] overflow-hidden rounded-xl">
+                  <img
+                    src={protectedUrl}
+                    alt={project.title}
+                    className="h-full w-full object-contain"
+                    onContextMenu={(e) => isProtected && e.preventDefault()}
+                  />
+                </div>
+              )}
+
+              {hasSoundtrack && isImage && (
+                <SoundtrackChip
+                  trackId={project.soundtrackId!}
+                  title={project.soundtrackTitle}
+                  artist={project.soundtrackArtist}
+                  thumbnail={project.soundtrackThumbnail}
+                  variant="detail"
+                  autoPlay
+                />
+              )}
+            </div>
 
             {hasMultipleImages && (
               <PaginationDots emblaApi={carouselApi} count={images.length} variant="detail" />
-            )}
-
-            {hasSoundtrack && isImage && (
-              <SoundtrackChip
-                trackId={project.soundtrackId!}
-                title={project.soundtrackTitle}
-                artist={project.soundtrackArtist}
-                thumbnail={project.soundtrackThumbnail}
-                variant="detail"
-              />
             )}
           </div>
         </div>

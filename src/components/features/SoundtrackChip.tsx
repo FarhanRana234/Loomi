@@ -67,6 +67,7 @@ interface SoundtrackChipProps {
   artist?: string;
   thumbnail?: string;
   variant?: "feed" | "detail";
+  autoPlay?: boolean;
   onPlayStateChange?: (playing: boolean) => void;
 }
 
@@ -76,12 +77,13 @@ export function SoundtrackChip({
   artist,
   thumbnail,
   variant = "feed",
+  autoPlay = false,
   onPlayStateChange,
 }: SoundtrackChipProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<SoundtrackChipPlayer | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
+  const [isMuted, setIsMuted] = useState(autoPlay);
   const [loadError, setLoadError] = useState(false);
   const [isReady, setIsReady] = useState(false);
 
@@ -109,7 +111,7 @@ export function SoundtrackChip({
           width: 1,
           height: 1,
           playerVars: {
-            autoplay: 0,
+            autoplay: autoPlay ? 1 : 0,
             controls: 0,
             disablekb: 1,
             fs: 0,
@@ -120,7 +122,20 @@ export function SoundtrackChip({
             loop: 1,
           },
           events: {
-            onReady: () => { if (mounted) setIsReady(true); },
+            onReady: () => {
+              if (!mounted) return;
+              setIsReady(true);
+              if (autoPlay) {
+                const p = playerRef.current;
+                if (p) {
+                  p.mute();
+                  p.playVideo();
+                  setIsMuted(true);
+                  setIsPlaying(true);
+                  onPlayStateChange?.(true);
+                }
+              }
+            },
             onError: () => { if (mounted) setLoadError(true); },
           },
         });
@@ -136,7 +151,7 @@ export function SoundtrackChip({
         playerRef.current = null;
       }
     };
-  }, [trackId]);
+  }, [trackId, autoPlay, onPlayStateChange]);
 
   const togglePlay = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
